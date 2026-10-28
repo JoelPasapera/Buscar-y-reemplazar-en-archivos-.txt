@@ -5,7 +5,7 @@
 **Una herramienta web para buscar, reemplazar y revisar texto directamente desde el navegador.**
 
 <!-- CAMBIA ESTA URL por la dirección pública de tu aplicación. -->
-<a href="[https://tu-usuario.github.io/tu-repositorio/](https://joelpasapera.github.io/Buscar-y-reemplazar-en-archivos-.txt/)" target="_blank" rel="noopener noreferrer">
+<a href="https://joelpasapera.github.io/Buscar-y-reemplazar-en-archivos-.txt/" target="_blank" rel="noopener noreferrer">
   <img src="https://img.shields.io/badge/ABRIR%20LA%20APLICACI%C3%93N-2458D3?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Abrir la aplicación web">
 </a>
 
