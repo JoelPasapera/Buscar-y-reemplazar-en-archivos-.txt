@@ -1,0 +1,2667 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buscar y reemplazar en .txt</title>
+<script>try{var t=localStorage.getItem('reemplazar-txt-tema');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:inherit}
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --paper:#ffffff;--sheet:#ffffff;--ink:#1a2130;--muted:#586174;--rule:#dfe4ec;--edge:#c4ccd9;--margin:#f0b4ad;
+  --red:#c42b24;--blue:#2350c4;--blue-strong:#183c99;--on-blue:#ffffff;--field:#f3f5f9;--err:#b3261e;--here:#eef3ff;
+  --field-line:#1a2130;--bar-bg:#ffffff;--shadow:rgba(26,33,48,.45);
+  --sans:"Atkinson Hyperlegible Next","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Atkinson Hyperlegible Mono","Cascadia Mono",Consolas,ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0e1320;--sheet:#121a2b;--ink:#e8e6df;--muted:#8f98ab;--rule:#1f2a42;--edge:#2a3654;--margin:#5c3040;
+    --red:#ff7a6b;--blue:#8fb0ff;--blue-strong:#b4c9ff;--on-blue:#0b1222;--field:#18223a;--err:#ff8f84;--here:#1a2440;
+    --field-line:#56627c;--bar-bg:#111a2c;--shadow:rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0e1320;--sheet:#121a2b;--ink:#e8e6df;--muted:#8f98ab;--rule:#1f2a42;--edge:#2a3654;--margin:#5c3040;
+  --red:#ff7a6b;--blue:#8fb0ff;--blue-strong:#b4c9ff;--on-blue:#0b1222;--field:#18223a;--err:#ff8f84;--here:#1a2440;
+    --field-line:#56627c;--bar-bg:#111a2c;--shadow:rgba(0,0,0,.7);
+  color-scheme:dark;
+}
+html{background:var(--paper);scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:1.0625rem;line-height:1.55;-webkit-font-smoothing:antialiased}
+[hidden]{display:none !important}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+
+.wrap{max-width:58rem;margin:0 auto;padding:clamp(2.25rem,7vw,4.5rem) clamp(1rem,4vw,1.5rem) 4rem}
+h1{font-size:clamp(1.9rem,1.25rem + 2.6vw,2.65rem);line-height:1.08;font-weight:700;letter-spacing:-.018em;margin:0}
+h2{font-size:1.25rem;line-height:1.2;font-weight:700;margin:0}
+.lede{margin:.8rem 0 0;color:var(--muted);max-width:36rem}
+.muted{color:var(--muted)}
+
+/* Hoja rayada: el archivo es papel con renglones */
+.sheet{
+  --line:2rem;--m:2.6rem;
+  position:relative;margin:0;border:1px solid var(--edge);background-color:var(--sheet);
+  background-image:
+    linear-gradient(90deg,transparent var(--m),var(--margin) var(--m),var(--margin) calc(var(--m) + 1.5px),transparent calc(var(--m) + 1.5px)),
+    repeating-linear-gradient(180deg,transparent 0,transparent calc(var(--line) - 1px),var(--rule) calc(var(--line) - 1px),var(--rule) var(--line));
+  padding:var(--line) 1.25rem var(--line) calc(var(--m) + 1rem);
+  line-height:var(--line);
+  transition:border-color .15s;
+}
+.sheet p{margin:0}
+.sheet.over{border-color:var(--blue);--rule:color-mix(in srgb,var(--blue) 40%,var(--sheet))}
+.drop{cursor:pointer}
+.drop-title{font-family:var(--mono);font-weight:600;font-size:1.2rem}
+.drop-alt{color:var(--muted)}
+.file-head{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem 1.25rem}
+.file-head .linklike{flex:none}
+.file-name{min-width:0;font-family:var(--mono);font-weight:600;font-size:1.15rem;overflow-wrap:anywhere}
+.file-meta{display:flex;flex-wrap:wrap;align-items:center;column-gap:1.4rem;color:var(--muted)}
+.enc{display:inline-flex;align-items:center;gap:.5rem}
+select{background:var(--field);border:1px solid var(--edge);border-radius:.3rem;padding:.05rem .35rem;line-height:1.5;color:var(--ink)}
+.file .note{line-height:var(--line);margin:0}
+.resume{display:flex;flex-wrap:wrap;align-items:center;gap:0 1rem}
+.resume p{color:var(--ink);font-weight:700}
+
+.linklike{background:none;border:0;padding:0;color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:.2em;text-decoration-thickness:1px}
+.linklike:hover{text-decoration-thickness:2px}
+.linklike:disabled{opacity:.45;cursor:not-allowed;text-decoration:none}
+
+/* Visor de líneas: el número va en el margen */
+.viewer{--m:6.75rem;margin-top:1.25rem;padding:var(--line) 1rem var(--line) 0}
+.viewer-bar,.viewer-nav{display:flex;flex-wrap:wrap;align-items:center;gap:0 .75rem;padding-left:calc(var(--m) + 1rem)}
+.viewer-bar label{font-weight:700}
+.viewer-bar input{width:9rem;font-family:var(--mono);font-size:1rem;line-height:1.4;padding:.15rem .5rem;background:var(--field);border:0;border-bottom:2px solid var(--field-line);border-radius:0}
+.viewer-bar .close{margin-left:auto}
+.viewer-nav{gap:0 1.5rem}
+.lines{list-style:none;margin:var(--line) 0 0;padding:0}
+.lines li{display:grid;grid-template-columns:var(--m) minmax(0,1fr) auto;column-gap:1rem;align-items:start;min-height:var(--line)}
+.lines .ln{text-align:right;padding-right:.65rem;color:var(--muted);font-size:.88rem;font-variant-numeric:tabular-nums}
+.lines .lt{font-family:var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+.lines .lt.empty{color:var(--muted);font-family:var(--sans);font-style:italic}
+.lines li.here{background:var(--here)}
+.lines li.here .ln{color:var(--blue);font-weight:700}
+.edit-row{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .75rem;grid-column:2 / 4}
+.edit-row input{flex:1 1 14rem;min-width:0;font-family:var(--mono);font-size:1rem;line-height:1.4;padding:.15rem .5rem;background:var(--field);border:0;border-bottom:2px solid var(--blue);border-radius:0}
+.viewer .note{padding-left:calc(var(--m) + 1rem);margin:0}
+
+/* Formulario */
+.form{display:grid;grid-template-columns:8rem minmax(0,1fr);column-gap:1rem;row-gap:1rem;align-items:start;margin:2.25rem 0 2rem}
+.form>label{font-weight:700;padding-top:.6rem}
+.form .opts,.form .more{grid-column:2}
+input[type=text].big{
+  width:100%;font-family:var(--mono);font-size:1.2rem;line-height:1.4;color:var(--ink);
+  background:var(--field);border:0;border-bottom:2px solid var(--field-line);border-radius:0;padding:.55rem .7rem;
+}
+input[type=text]::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
+input[type=text].big:focus{border-bottom-color:var(--blue)}
+input[type=text]:focus-visible{outline-offset:0}
+input:disabled,select:disabled{opacity:.55}
+.note{margin:.4rem 0 0;font-size:.92rem;color:var(--muted)}
+.note.err{color:var(--err)}
+.opts{display:flex;flex-wrap:wrap;gap:.5rem 1.6rem}
+.opts label{display:inline-flex;align-items:center;gap:.55rem;cursor:pointer}
+.opts input{width:1.15rem;height:1.15rem;margin:0;accent-color:var(--blue)}
+
+/* Omitir según lo que hay al lado: botones que se encienden y se suman */
+:root{
+  --ic-off:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='8.1' fill='none' stroke='black' stroke-width='1.8'/%3E%3C/svg%3E");
+  --ic-on:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cmask id='m'%3E%3Crect width='20' height='20' fill='white'/%3E%3Cpath d='M5.6 10.3l2.9 2.9 5.9-6.2' fill='none' stroke='black' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/mask%3E%3Ccircle cx='10' cy='10' r='9' mask='url(%23m)'/%3E%3C/svg%3E");
+}
+.form>.omit-label{font-weight:700;padding-top:.45rem}
+.omit-row{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem}
+.chips{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem}
+.chips-join{color:var(--muted);padding-right:.15rem}
+.chip{display:inline-flex;align-items:center;gap:.5rem;min-height:2.4rem;padding:.3rem 1rem .3rem .75rem;border:1px solid var(--edge);border-radius:999px;background:transparent;color:var(--ink);font-size:.98rem;line-height:1.2;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background-color .15s,border-color .15s,color .15s}
+.chip::before{content:"";flex:none;width:1.1em;height:1.1em;background:var(--muted);-webkit-mask:var(--ic-off) center/contain no-repeat;mask:var(--ic-off) center/contain no-repeat}
+.chip:hover{border-color:var(--ink)}
+.chip:hover::before{background:var(--ink)}
+.chip[aria-pressed="true"]{background:color-mix(in srgb,var(--blue) 13%,transparent);border-color:var(--blue);color:var(--blue-strong)}
+.chip[aria-pressed="true"]:hover{background:color-mix(in srgb,var(--blue) 21%,transparent)}
+.chip[aria-pressed="true"]::before{background:var(--blue);-webkit-mask-image:var(--ic-on);mask-image:var(--ic-on)}
+.omit .note{margin-top:.55rem}
+.note.on{color:var(--ink)}
+@media (forced-colors:active){
+  .chip::before,.chip:hover::before{forced-color-adjust:none;background:ButtonText}
+  .chip[aria-pressed="true"]{border-width:2px}
+  .chip[aria-pressed="true"]::before{background:Highlight}
+}
+
+/* Lista pegada: se escribe sobre los renglones */
+.listbox{margin:-1rem 0 2rem}
+.listbox .help{color:var(--muted);font-size:.95rem}
+.listbox textarea{
+  display:block;width:100%;min-height:10rem;resize:vertical;margin:0;padding:0;border:0;
+  font-family:var(--mono);font-size:1rem;line-height:var(--line);color:var(--ink);background-color:transparent;
+  background-image:repeating-linear-gradient(180deg,transparent 0,transparent calc(var(--line) - 1px),var(--rule) calc(var(--line) - 1px),var(--rule) var(--line));
+  background-attachment:local;
+}
+.listbox .row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.25rem}
+.listbox .note{margin:0;line-height:var(--line)}
+
+/* Vista previa con marca de corrector */
+.proof{--line:3rem;padding:0 1.25rem 0 calc(var(--m) + 1rem);margin:0 0 1.75rem}
+.proof figcaption{font-size:.92rem;color:var(--muted);line-height:var(--line);display:flex;flex-wrap:wrap;gap:0 1rem}
+.proof-line{font-family:var(--mono);font-size:1.12rem;white-space:pre-wrap;overflow-wrap:anywhere;transition:opacity .15s;max-height:calc(var(--line) * 8);overflow-y:auto;overscroll-behavior:contain;background-color:var(--sheet);background-image:repeating-linear-gradient(180deg,transparent 0,transparent calc(var(--line) - 1px),var(--rule) calc(var(--line) - 1px),var(--rule) var(--line));background-attachment:local}
+.proof-line.dim{opacity:.4}
+ruby{ruby-align:center}
+rt{font-family:var(--sans);font-weight:700;font-size:.74em;line-height:1;color:var(--blue);white-space:pre}
+rt.gone{color:var(--red);font-style:italic}
+.strike{background:linear-gradient(var(--red),var(--red)) no-repeat 0 58%/100% 2px;animation:strike .34s cubic-bezier(.2,.7,.2,1)}
+@keyframes strike{from{background-size:0 2px}to{background-size:100% 2px}}
+
+/* Coincidencias */
+.matches{--line:2.75rem;margin:-1rem 0 1.75rem}
+.matches-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 1rem}
+.matches-head span{font-weight:700}
+.matches-head .close{margin-left:auto}
+.mlist{list-style:none;margin:0;padding:0}
+.mlist label{display:grid;grid-template-columns:auto 6.5rem minmax(0,1fr);column-gap:.75rem;align-items:start;cursor:pointer}
+.mlist input{width:1.1rem;height:1.1rem;margin:calc((var(--line) - 1.1rem) / 2) 0 0;accent-color:var(--blue)}
+.mlist .ln{color:var(--muted);font-size:.86rem;font-variant-numeric:tabular-nums}
+.mlist .ctx{display:block;font-family:var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:calc(var(--line) * 4);overflow-y:auto;overscroll-behavior:contain;background-color:var(--sheet);background-image:repeating-linear-gradient(180deg,transparent 0,transparent calc(var(--line) - 1px),var(--rule) calc(var(--line) - 1px),var(--rule) var(--line));background-attachment:local}
+.mlist .off .strike{background:none;animation:none}
+.mlist .off rt{visibility:hidden}
+
+/* Botones */
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.25rem;margin:0 0 1rem}
+.actions .note{margin:0}
+.flash{margin:0 0 1.75rem}
+.btn{border:1px solid transparent;border-radius:.55rem;padding:.8rem 1.5rem;font-weight:700;line-height:1.2;cursor:pointer}
+.btn.primary{background:var(--blue);color:var(--on-blue)}
+.btn.primary:hover:not(:disabled){background:var(--blue-strong)}
+.btn.ghost{background:transparent;border-color:var(--edge);padding:.6rem 1.15rem}
+.btn.ghost:hover:not(:disabled){border-color:var(--ink)}
+.btn.small{padding:.35rem .85rem;font-size:.95rem}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+
+/* Cambios */
+.ops{margin:2.25rem 0 0;padding-top:1.1rem;border-top:1px solid var(--edge)}
+.ops-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.25rem 1rem;margin:0 0 .75rem}
+.oplist{list-style:none;margin:0 0 1.25rem;padding:0;border-top:1px solid var(--edge)}
+.oplist>li{padding:.6rem 0;border-bottom:1px solid var(--edge)}
+.op-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:.15rem 1rem}
+.op-what{flex:1 1 14rem;min-width:0;font-family:var(--mono);overflow-wrap:anywhere}
+.op-meta{color:var(--muted);font-variant-numeric:tabular-nums}
+.op-sub{margin:.1rem 0 0;font-size:.88rem;color:var(--muted);overflow-wrap:anywhere}
+.oplist details{margin-top:.3rem;font-size:.92rem}
+.oplist summary{cursor:pointer;color:var(--blue)}
+.oplist table{border-collapse:collapse;margin-top:.3rem}
+.oplist td{padding:.1rem 1rem .1rem 0;vertical-align:top}
+.oplist td:first-child{font-family:var(--mono);overflow-wrap:anywhere}
+.oplist td:last-child{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Encabezado: grande al empezar, compacto con un archivo abierto */
+.top{margin:0 0 2.25rem}
+.top-row{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:.75rem 1.5rem}
+.top-row h1{flex:1 1 18rem;min-width:0}
+.theme{display:inline-flex;flex:none;gap:2px;padding:2px;margin-top:.35rem;border:1px solid var(--edge);border-radius:999px}
+.theme button{display:inline-flex;align-items:center;gap:.4rem;border:0;border-radius:999px;background:transparent;color:var(--muted);padding:.3rem .75rem;font-size:.9rem;line-height:1.2;cursor:pointer}
+.theme button:hover{color:var(--ink)}
+.theme button[aria-pressed="true"]{background:var(--field);color:var(--ink)}
+.theme svg{flex:none}
+body.has-file .wrap{padding-top:clamp(1.25rem,3vw,2rem)}
+body.has-file .top{margin-bottom:1.5rem}
+body.has-file .top-row{align-items:center}
+body.has-file .theme{margin-top:0}
+body.has-file h1{font-size:1.35rem;letter-spacing:-.01em}
+body.has-file .lede{display:none}
+
+/* Barra fija para guardar */
+.wrap:has(.savebar:not([hidden])){padding-bottom:0}
+.savebar{position:sticky;bottom:0;z-index:5;margin:2.5rem calc(-1 * clamp(1rem,4vw,1.5rem)) 0;padding:.8rem clamp(1rem,4vw,1.5rem) calc(.8rem + env(safe-area-inset-bottom,0px));background:var(--bar-bg);border-top:1px solid var(--edge);box-shadow:0 -12px 28px -20px var(--shadow)}
+.savebar-in{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.25rem}
+.sb-info{margin:0;flex:1 1 14rem;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 1rem;font-variant-numeric:tabular-nums}
+.sb-count{font-weight:700}
+.savebar .note{margin:.35rem 0 0}
+.btn.accent{background:transparent;border-color:var(--blue);color:var(--blue)}
+.btn.accent:hover:not(:disabled){background:color-mix(in srgb,var(--blue) 12%,transparent)}
+.opbar{height:3px;margin-top:.45rem;background:var(--rule);border-radius:2px;overflow:hidden}
+.opbar span{display:block;width:0;height:100%;background:var(--blue);transition:width .2s linear}
+::selection{background:color-mix(in srgb,var(--blue) 30%,transparent)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+
+@media (max-width:560px){
+  .sheet{--m:1.6rem;padding-right:1rem}
+  .viewer{--m:4.75rem}
+  .form{grid-template-columns:minmax(0,1fr);row-gap:.35rem}
+  .form>label{padding-top:0}
+  .form>label:not(:first-child){margin-top:.9rem}
+  .form>.omit-label{padding-top:0;margin-top:.9rem}
+  .form .more{margin-top:.5rem}
+  .form .opts,.form .more{grid-column:1}
+  .form .opts{margin-top:1rem}
+  .mlist label{grid-template-columns:auto minmax(0,1fr)}
+  .mlist .ctx{grid-column:2}
+}
+@media (prefers-reduced-motion:reduce){
+  .strike{animation:none}
+  .opbar span,.proof-line,.sheet{transition:none}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <h1>Buscar y reemplazar en archivos .txt</h1>
+      <div class="theme" role="group" aria-label="Tema de la página">
+        <button type="button" id="themeLight" aria-pressed="false"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Claro</button>
+        <button type="button" id="themeDark" aria-pressed="false"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Oscuro</button>
+      </div>
+    </div>
+    <p class="lede">Pensado para archivos enormes, de cientos de megas o varios gigas. Todo pasa dentro de tu navegador: el archivo no se sube a internet.</p>
+  </header>
+
+  <section class="sheet drop" id="drop">
+    <p class="drop-title" id="dropTitle">Arrastra aquí tu archivo .txt</p>
+    <p class="drop-alt">o <button type="button" class="linklike" id="chooseBtn">búscalo en tu equipo</button></p>
+  </section>
+
+  <section class="sheet file" id="fileBox" hidden>
+    <div class="file-head">
+      <p class="file-name" id="fileName"></p>
+      <button type="button" class="linklike" id="changeBtn">Cambiar archivo</button>
+    </div>
+    <div class="file-meta">
+      <span id="fileSize"></span>
+      <label class="enc">Codificación
+        <select id="encSel">
+          <option value="utf-8">UTF-8</option>
+          <option value="windows-1252">Windows (ANSI)</option>
+          <option value="utf-16le">UTF-16 LE</option>
+          <option value="utf-16be">UTF-16 BE</option>
+        </select>
+      </label>
+      <button type="button" class="linklike" id="openViewer">Ir a una línea</button>
+    </div>
+    <p class="note" id="fileNote" hidden></p>
+    <div class="resume" id="resume" hidden>
+      <p id="resumeText"></p>
+      <button type="button" class="linklike" id="resumeYes">Reaplicarlos</button>
+      <button type="button" class="linklike" id="resumeNo">Descartar</button>
+    </div>
+  </section>
+  <input type="file" id="fileInput" accept=".txt,text/plain" hidden>
+
+  <section class="sheet viewer" id="viewer" hidden aria-label="Líneas del archivo">
+    <div class="viewer-bar">
+      <label for="lineInput">Línea</label>
+      <input id="lineInput" type="text" inputmode="numeric" autocomplete="off" spellcheck="false">
+      <button type="button" class="btn ghost small" id="lineGo">Ir</button>
+      <span class="muted" id="lineTotal"></span>
+      <button type="button" class="linklike close" id="viewerClose">Cerrar</button>
+    </div>
+    <ol class="lines" id="lineList"></ol>
+    <div class="viewer-nav">
+      <button type="button" class="linklike" id="linePrev">Anteriores</button>
+      <button type="button" class="linklike" id="lineNext">Siguientes</button>
+    </div>
+    <p class="note" id="viewerNote" hidden></p>
+  </section>
+
+  <div class="form">
+    <label for="find">Buscar</label>
+    <div>
+      <input id="find" class="big" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="lo que quieres cambiar">
+      <p class="note" id="findNote" hidden></p>
+    </div>
+    <label for="repl">Cambiar por</label>
+    <div>
+      <input id="repl" class="big" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="texto nuevo, o vacío para borrar">
+      <p class="note" id="replNote" hidden></p>
+    </div>
+    <div class="opts">
+      <label><input type="checkbox" id="optCase" checked> Distinguir mayúsculas y minúsculas</label>
+      <label><input type="checkbox" id="optWord"> Solo palabras completas</label>
+    </div>
+    <span class="omit-label" id="omitLabel">Omitir si hay</span>
+    <div class="omit" id="omitBox" role="group" aria-labelledby="omitLabel" aria-describedby="omitNote">
+      <div class="omit-row">
+        <div class="chips" role="group" aria-label="Qué carácter">
+          <button type="button" class="chip" data-kind="number" aria-pressed="false">Número</button>
+          <button type="button" class="chip" data-kind="letter" aria-pressed="false">Letra</button>
+          <button type="button" class="chip" data-kind="special" aria-pressed="false" title="Signos y símbolos, como . , ; : - _ @ # $ % ¿ ? ( )">Carácter especial</button>
+        </div>
+        <div class="chips" role="group" aria-label="En qué lado">
+          <span class="chips-join">justo</span>
+          <button type="button" class="chip" data-side="before" aria-pressed="false">Antes</button>
+          <button type="button" class="chip" data-side="after" aria-pressed="false">Después</button>
+        </div>
+      </div>
+      <p class="note" id="omitNote"></p>
+    </div>
+    <div class="more"><button type="button" class="linklike" id="openList">Pegar una lista de cambios</button></div>
+  </div>
+
+  <section class="sheet listbox" id="listBox" hidden aria-label="Lista de cambios">
+    <p class="help">Una línea por cambio: lo que buscas y el texto nuevo, separados por una tabulación o por →. Se aplican todos a la vez, con las opciones de arriba.</p>
+    <textarea id="listText" spellcheck="false" rows="6" placeholder="casa → hogar&#10;perro → can"></textarea>
+    <p class="note" id="listNote" hidden></p>
+    <div class="row">
+      <button type="button" class="btn ghost small" id="listApply" disabled>Aplicar lista</button>
+      <button type="button" class="linklike" id="listUploadBtn">Subir un archivo con la lista</button>
+      <button type="button" class="linklike" id="listClose">Cerrar</button>
+    </div>
+    <input type="file" id="listFile" accept=".txt,.csv,.tsv,text/plain,text/csv" hidden>
+  </section>
+
+  <figure class="sheet proof" id="proof" hidden>
+    <figcaption><span id="proofCap"></span><button type="button" class="linklike" id="openMatches" hidden>Ver coincidencias</button></figcaption>
+    <p class="proof-line" id="proofLine"></p>
+  </figure>
+
+  <section class="sheet matches" id="matchBox" hidden aria-label="Coincidencias">
+    <p class="matches-head"><span id="matchHead"></span><button type="button" class="linklike close" id="matchClose">Cerrar</button></p>
+    <ol class="mlist" id="matchList"></ol>
+    <p><button type="button" class="linklike" id="matchMore" hidden>Ver 50 más</button></p>
+  </section>
+
+  <div class="actions">
+    <button type="button" class="btn primary" id="applyBtn" disabled>Aplicar cambio</button>
+    <p class="note" id="applyNote" hidden></p>
+  </div>
+  <p class="note flash" id="flash" role="status" hidden></p>
+
+  <section class="ops" id="opsBox" hidden>
+    <div class="ops-head">
+      <h2>Cambios</h2>
+      <button type="button" class="linklike" id="exportBtn">Descargar la lista</button>
+    </div>
+    <ol class="oplist" id="opList"></ol>
+  </section>
+
+  <div class="savebar" id="saveBar" hidden>
+    <div class="savebar-in">
+      <p class="sb-info"><span class="sb-count" id="sbCount"></span><span class="muted" id="sbStatus"></span></p>
+      <button type="button" class="linklike" id="stopBtn" hidden>Detener</button>
+      <button type="button" class="btn accent" id="saveBtn">Guardar archivo</button>
+    </div>
+    <p class="note" id="saveNote" role="status" hidden></p>
+  </div>
+</main>
+
+<script>
+const TxtEngine = (() => {
+  'use strict';
+
+  // ---------- Codificaciones ----------
+  const W1252_HIGH = [
+    0x20AC, 0x0081, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
+    0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0x008D, 0x017D, 0x008F,
+    0x0090, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
+    0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x009D, 0x017E, 0x0178
+  ];
+  const W1252_REV = new Map();
+  for (let i = 0; i < 32; i++) W1252_REV.set(W1252_HIGH[i], 0x80 + i);
+  const w1252cp = (b) => (b < 0x80 || b >= 0xA0) ? b : W1252_HIGH[b - 0x80];
+
+  function encodeCp(cp, enc) {
+    if (enc === 'utf-8') {
+      if (cp >= 0xD800 && cp <= 0xDFFF) return null;
+      if (cp < 0x80) return Uint8Array.of(cp);
+      if (cp < 0x800) return Uint8Array.of(0xC0 | (cp >> 6), 0x80 | (cp & 63));
+      if (cp < 0x10000) return Uint8Array.of(0xE0 | (cp >> 12), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63));
+      return Uint8Array.of(0xF0 | (cp >> 18), 0x80 | ((cp >> 12) & 63), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63));
+    }
+    if (enc === 'utf-16le' || enc === 'utf-16be') {
+      const u = cp > 0xFFFF
+        ? [0xD800 + ((cp - 0x10000) >> 10), 0xDC00 + ((cp - 0x10000) & 0x3FF)]
+        : [cp];
+      const out = new Uint8Array(u.length * 2);
+      for (let i = 0; i < u.length; i++) {
+        if (enc === 'utf-16le') { out[2 * i] = u[i] & 255; out[2 * i + 1] = u[i] >> 8; }
+        else { out[2 * i] = u[i] >> 8; out[2 * i + 1] = u[i] & 255; }
+      }
+      return out;
+    }
+    if (enc === 'windows-1252') {
+      if (cp < 0x80 || (cp >= 0xA0 && cp <= 0xFF)) return Uint8Array.of(cp);
+      const b = W1252_REV.get(cp);
+      return b === undefined ? null : Uint8Array.of(b);
+    }
+    return null;
+  }
+
+  function encodeString(str, enc) {
+    const parts = [];
+    let len = 0;
+    for (const ch of str) {
+      const e = encodeCp(ch.codePointAt(0), enc);
+      if (!e) return { bytes: null, bad: ch };
+      parts.push(e);
+      len += e.length;
+    }
+    const out = new Uint8Array(len);
+    let o = 0;
+    for (const p of parts) { out.set(p, o); o += p.length; }
+    return { bytes: out, bad: null };
+  }
+
+  // ---------- Letras y límites de palabra ----------
+  const WORD_RE = /^[\p{L}\p{N}\p{M}_]$/u;
+  const wordCache = new Map();
+  function isWordCp(cp) {
+    if (cp < 0) return false;
+    if (cp < 128) return (cp >= 48 && cp <= 57) || (cp >= 65 && cp <= 90) || (cp >= 97 && cp <= 122) || cp === 95;
+    let r = wordCache.get(cp);
+    if (r === undefined) { r = WORD_RE.test(String.fromCodePoint(cp)); wordCache.set(cp, r); }
+    return r;
+  }
+
+  let dlen = 0;
+  function decodeUtf8At(B, s, limit) {
+    const b0 = B[s];
+    if (b0 < 0x80) { dlen = 1; return b0; }
+    let len, cp;
+    if (b0 >= 0xC2 && b0 <= 0xDF) { len = 2; cp = b0 & 0x1F; }
+    else if (b0 >= 0xE0 && b0 <= 0xEF) { len = 3; cp = b0 & 0x0F; }
+    else if (b0 >= 0xF0 && b0 <= 0xF4) { len = 4; cp = b0 & 0x07; }
+    else { dlen = 1; return 0xFFFD; }
+    if (s + len > limit) { dlen = 1; return 0xFFFD; }
+    for (let t = 1; t < len; t++) {
+      const b = B[s + t];
+      if ((b & 0xC0) !== 0x80) { dlen = 1; return 0xFFFD; }
+      cp = (cp << 6) | (b & 0x3F);
+    }
+    // F4 90 80 80 y siguientes pasan de U+10FFFF: no son caracteres (y String.fromCodePoint fallaría con ellos).
+    if (cp > 0x10FFFF) { dlen = 1; return 0xFFFD; }
+    dlen = len;
+    return cp;
+  }
+  function prevUtf8(B, i) {
+    if (i <= 0) return -1;
+    const lo = i > 4 ? i - 4 : 0;
+    let s = i - 1;
+    while (s > lo && (B[s] & 0xC0) === 0x80) s--;
+    const cp = decodeUtf8At(B, s, i);
+    return s + dlen === i ? cp : 0xFFFD;
+  }
+  const nextUtf8 = (B, i, n) => (i >= n ? -1 : decodeUtf8At(B, i, n));
+  const prevW = (B, i) => (i <= 0 ? -1 : w1252cp(B[i - 1]));
+  const nextW = (B, i, n) => (i >= n ? -1 : w1252cp(B[i]));
+  function prev16(B, i, le) {
+    if (i < 2) return -1;
+    const u = le ? (B[i - 2] | (B[i - 1] << 8)) : ((B[i - 2] << 8) | B[i - 1]);
+    if (u >= 0xDC00 && u <= 0xDFFF && i >= 4) {
+      const h = le ? (B[i - 4] | (B[i - 3] << 8)) : ((B[i - 4] << 8) | B[i - 3]);
+      if (h >= 0xD800 && h <= 0xDBFF) return 0x10000 + ((h - 0xD800) << 10) + (u - 0xDC00);
+    }
+    return u;
+  }
+  function next16(B, i, n, le) {
+    if (i + 1 >= n) return -1;
+    const u = le ? (B[i] | (B[i + 1] << 8)) : ((B[i] << 8) | B[i + 1]);
+    if (u >= 0xD800 && u <= 0xDBFF && i + 3 < n) {
+      const l = le ? (B[i + 2] | (B[i + 3] << 8)) : ((B[i + 2] << 8) | B[i + 3]);
+      if (l >= 0xDC00 && l <= 0xDFFF) return 0x10000 + ((u - 0xD800) << 10) + (l - 0xDC00);
+    }
+    return u;
+  }
+
+  // ---------- Qué hay justo al lado de una coincidencia («Omitir si hay…») ----------
+  // Cada carácter cae en una clase: número, letra, especial (signos y símbolos) o ninguna (espacios, saltos de
+  // línea y controles; también el principio y el final del archivo). Se mira el carácter completo:
+  // - Los caracteres de formato invisibles (guion suave, espacio de ancho cero, marca de orden de bytes…) y los
+  //   selectores de variante de los emoji no cuentan: se salta por encima de ellos.
+  // - Un acento escrito como carácter aparte es parte de la letra a la que acompaña. Antes de la coincidencia
+  //   cuenta esa letra; si va justo después, la coincidencia termina a mitad de un carácter (por ejemplo,
+  //   «esta» dentro de un «está» con el acento aparte), y lo que sigue es el resto de ese mismo carácter.
+  const KIND_NONE = 0, KIND_NUMBER = 1, KIND_LETTER = 2, KIND_SPECIAL = 4, KIND_SEE_THROUGH = 8, KIND_MARK = 16;
+  /** Bits de la regla: `kinds` suma NUMBER, LETTER y SPECIAL; `sides` suma BEFORE y AFTER. */
+  const OMIT = Object.freeze({ NUMBER: KIND_NUMBER, LETTER: KIND_LETTER, SPECIAL: KIND_SPECIAL, BEFORE: 1, AFTER: 2 });
+  const HOPS_MAX = 8;    // caracteres que se saltan, como mucho, para llegar al que cuenta
+  const SIDE_REACH = 40; // bytes que hay que poder mirar a cada lado: 9 caracteres de hasta 4 bytes, con margen
+  const RE_LETTER = /^\p{L}$/u;
+  const RE_NUMBER = /^\p{N}$/u;
+  const RE_SEE_THROUGH = /^[\p{Cf}\p{Variation_Selector}]$/u;
+  const RE_MARK = /^\p{M}$/u;
+  const RE_BLANK = /^[\p{White_Space}\p{Cc}]$/u;
+
+  /**
+   * Clase de un punto de código según sus propiedades Unicode.
+   * @param {number} cp
+   * @returns {number} una de las constantes KIND_*
+   */
+  function kindOf(cp) {
+    if (cp > 0x10FFFF) return KIND_SPECIAL;
+    const s = String.fromCodePoint(cp);
+    if (RE_LETTER.test(s)) return KIND_LETTER;
+    if (RE_NUMBER.test(s)) return KIND_NUMBER;
+    if (RE_SEE_THROUGH.test(s)) return KIND_SEE_THROUGH;
+    if (RE_MARK.test(s)) return KIND_MARK;
+    if (RE_BLANK.test(s)) return KIND_NONE;
+    return KIND_SPECIAL; // signos, símbolos, uso privado y sustitutos sueltos (se ven como «�»)
+  }
+
+  const ASCII_KIND = new Uint8Array(128);
+  for (let c = 0; c < 128; c++) ASCII_KIND[c] = kindOf(c);
+  /**
+   * Clases ya calculadas fuera de ASCII: un byte por punto de código; 0 = sin calcular, si no clase + 1.
+   * @type {Uint8Array | null}
+   */
+  let kindMemo = null;
+
+  /**
+   * Clase de un punto de código (≥ 0), recordando las ya calculadas.
+   * @param {number} cp
+   * @returns {number}
+   */
+  function charKind(cp) {
+    if (cp < 128) return ASCII_KIND[cp];
+    if (cp > 0x10FFFF) return KIND_SPECIAL;
+    if (kindMemo === null) kindMemo = new Uint8Array(0x110000);
+    let v = kindMemo[cp];
+    if (v === 0) { v = kindOf(cp) + 1; kindMemo[cp] = v; }
+    return v - 1;
+  }
+
+  /**
+   * La regla en su forma válida, o null si no omite nada (falta qué carácter o en qué lado).
+   * @param {{ kinds?: number, sides?: number } | null | undefined} o
+   * @returns {{ kinds: number, sides: number } | null}
+   */
+  function normOmit(o) {
+    if (!o) return null;
+    const kinds = (o.kinds | 0) & 7, sides = (o.sides | 0) & 3;
+    return kinds && sides ? { kinds, sides } : null;
+  }
+
+  /** @param {number} cp */
+  const utf8Width = (cp) => (cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4);
+  /** @param {number} cp */
+  const u16Width = (cp) => (cp > 0xFFFF ? 4 : 2);
+  const oneByte = () => 1;
+
+  /**
+   * Lee la clase (KIND_NONE, KIND_NUMBER, KIND_LETTER o KIND_SPECIAL) del carácter pegado a una posición.
+   * Quien lo usa debe dejar SIDE_REACH bytes de contexto antes y de margen después dentro del bloque:
+   * llegar al borde del bloque se toma como llegar al principio o al final del archivo.
+   * @param {string} enc
+   * @returns {{ before: (B: Uint8Array, i: number) => number, after: (B: Uint8Array, i: number, n: number) => number }}
+   */
+  function sideReader(enc) {
+    const [prevCp, nextCp] = sides(enc);
+    const width = enc === 'utf-8' ? utf8Width : (isU16(enc) ? u16Width : oneByte);
+    /** Carácter que termina justo en i (saltando acentos sueltos e invisibles hasta su letra o signo). */
+    function before(B, i) {
+      for (let hop = 0; hop <= HOPS_MAX; hop++) {
+        const cp = prevCp(B, i);
+        if (cp < 0) return KIND_NONE;
+        const kind = charKind(cp);
+        if (kind !== KIND_SEE_THROUGH && kind !== KIND_MARK) return kind;
+        i -= width(cp);
+      }
+      return KIND_NONE;
+    }
+    /** Carácter que empieza en i, saltando invisibles; un acento suelto ahí sigue al carácter que acaba en i. */
+    function after(B, i, n) {
+      const end = i;
+      for (let hop = 0; hop <= HOPS_MAX; hop++) {
+        const cp = nextCp(B, i, n);
+        if (cp < 0) return KIND_NONE;
+        const kind = charKind(cp);
+        if (kind === KIND_MARK) return before(B, end);
+        if (kind !== KIND_SEE_THROUGH) return kind;
+        i += width(cp);
+      }
+      return KIND_NONE;
+    }
+    return { before, after };
+  }
+
+  function bytesEq(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+
+  function abortErr() {
+    const e = new Error('Cancelado');
+    e.name = 'AbortError';
+    return e;
+  }
+
+  // ---------- Preparar la búsqueda ----------
+  // freq: conteo de bytes de una muestra del archivo, para anclar la búsqueda en el byte más raro.
+  function compile(find, repl, opts, enc, freq) {
+    const caseSensitive = opts.caseSensitive !== false;
+    const wholeWord = !!opts.wholeWord;
+    const chars = Array.from(find);
+    if (!chars.length) return { error: 'empty' };
+    const prim = [], alt = [];
+    for (const ch of chars) {
+      const p = encodeCp(ch.codePointAt(0), enc);
+      if (!p) return { error: 'find', bad: ch };
+      let a = null;
+      if (!caseSensitive) {
+        for (const v of [ch.toLowerCase(), ch.toUpperCase()]) {
+          if (v === ch) continue;
+          const vs = Array.from(v);
+          if (vs.length !== 1) continue;
+          const e = encodeCp(vs[0].codePointAt(0), enc);
+          if (e && e.length === p.length && !bytesEq(e, p)) { a = e; break; }
+        }
+      }
+      prim.push(p);
+      alt.push(a);
+    }
+    const rr = encodeString(repl, enc);
+    if (rr.bad !== null) return { error: 'repl', bad: rr.bad };
+
+    let m = 0;
+    for (const p of prim) m += p.length;
+    const P1 = new Uint8Array(m), P2 = new Uint8Array(m);
+    const cs = new Int32Array(chars.length + 1);
+    const hasAlt = new Uint8Array(chars.length);
+    let o = 0;
+    for (let j = 0; j < chars.length; j++) {
+      cs[j] = o;
+      P1.set(prim[j], o);
+      if (alt[j]) { P2.set(alt[j], o); hasAlt[j] = 1; } else P2.set(prim[j], o);
+      o += prim[j].length;
+    }
+    cs[chars.length] = m;
+
+    let k = 0, best = Infinity;
+    for (let i = 0; i < m; i++) {
+      const dual = P2[i] !== P1[i];
+      const cost = freq
+        ? freq[P1[i]] + (dual ? freq[P2[i]] : 0) + (dual ? 0.5 : 0)
+        : (dual ? 2 : 1);
+      if (cost < best) { best = cost; k = i; }
+    }
+
+    const skip = new Int32Array(256).fill(m);
+    for (let p = 0; p < m - 1; p++) { skip[P1[p]] = m - 1 - p; skip[P2[p]] = m - 1 - p; }
+    let strategy = 'idx';
+    if (freq) {
+      let total = 0;
+      for (let b = 0; b < 256; b++) total += freq[b];
+      if (total > 0) {
+        // Costos medidos (ns por byte, aprox.): búsqueda nativa del byte ancla frente a saltos.
+        const dualA = P2[k] !== P1[k];
+        const dens = (freq[P1[k]] + (dualA ? freq[P2[k]] : 0)) / total;
+        const costIdx = (dualA ? 0.9 : 0.6) + dens * (dualA ? 125 : 70);
+        let avg = 0;
+        for (let b = 0; b < 256; b++) avg += freq[b] * skip[b];
+        avg /= total;
+        const dualL = P2[m - 1] !== P1[m - 1];
+        const lastDens = (freq[P1[m - 1]] + (dualL ? freq[P2[m - 1]] : 0)) / total;
+        const costBmh = (5.5 + lastDens * 45) / avg;
+        strategy = costBmh * 1.3 < costIdx ? 'bmh' : 'idx';
+      }
+    }
+    if (opts.strategy) strategy = opts.strategy;
+
+    const utf16 = enc === 'utf-16le' || enc === 'utf-16be';
+    const omit = normOmit(opts.omit);
+    const omitBefore = omit !== null && (omit.sides & OMIT.BEFORE) !== 0;
+    const omitAfter = omit !== null && (omit.sides & OMIT.AFTER) !== 0;
+    const near = enc === 'windows-1252' ? 1 : 4;
+    return {
+      find, repl, enc, m, P1, P2, cs, hasAlt,
+      nChars: chars.length,
+      anyAlt: hasAlt.some((x) => x === 1),
+      R: rr.bytes, k, skip, strategy,
+      align: utf16 ? 2 : 1,
+      checkBefore: wholeWord && isWordCp(chars[0].codePointAt(0)),
+      checkAfter: wholeWord && isWordCp(chars[chars.length - 1].codePointAt(0)),
+      omit, omitKinds: omit ? omit.kinds : 0, omitBefore, omitAfter,
+      la: omitAfter ? SIDE_REACH : (wholeWord ? near : 0),
+      ctx: omit !== null ? SIDE_REACH : near
+    };
+  }
+
+  // ---------- Buscador ----------
+  // counts (opcional) va sumando las apariciones descartadas: inWord por «Solo palabras completas» y
+  // omitted por «Omitir si hay…».
+  function makeScanner(pat, counts) {
+    const { m, P1, P2, cs, hasAlt, nChars, anyAlt, k, align, checkBefore, checkAfter, enc, skip, strategy,
+      omitKinds, omitBefore, omitAfter } = pat;
+    const tally = counts || { inWord: 0, omitted: 0 };
+    const side = omitBefore || omitAfter ? sideReader(enc) : null;
+    const a1 = P1[k], a2 = P2[k], dual = a1 !== a2;
+    const l1 = P1[m - 1], l2 = P2[m - 1];
+    const le = enc === 'utf-16le';
+    let prevCp, nextCp;
+    if (enc === 'utf-8') { prevCp = prevUtf8; nextCp = nextUtf8; }
+    else if (enc === 'windows-1252') { prevCp = prevW; nextCp = nextW; }
+    else { prevCp = (B, i) => prev16(B, i, le); nextCp = (B, i, n) => next16(B, i, n, le); }
+    let posBuf = new Int32Array(4096);
+
+    function verify(B, c) {
+      if (!anyAlt) {
+        for (let i = 0; i < m; i++) if (B[c + i] !== P1[i]) return false;
+        return true;
+      }
+      for (let j = 0; j < nChars; j++) {
+        const s = cs[j], e = cs[j + 1];
+        let i = s;
+        while (i < e && B[c + i] === P1[i]) i++;
+        if (i === e) continue;
+        if (!hasAlt[j]) return false;
+        for (i = s; i < e; i++) if (B[c + i] !== P2[i]) return false;
+      }
+      return true;
+    }
+
+    function accept(B, c, base, n) {
+      if (align === 2 && ((base + c) & 1) !== 0) return false;
+      if (!verify(B, c)) return false;
+      if (checkBefore) { const cp = prevCp(B, c); if (cp >= 0 && isWordCp(cp)) { tally.inWord++; return false; } }
+      if (checkAfter) { const cp = nextCp(B, c + m, n); if (cp >= 0 && isWordCp(cp)) { tally.inWord++; return false; } }
+      if (side !== null) {
+        if (omitBefore && (side.before(B, c) & omitKinds) !== 0) { tally.omitted++; return false; }
+        if (omitAfter && (side.after(B, c + m, n) & omitKinds) !== 0) { tally.omitted++; return false; }
+      }
+      return true;
+    }
+
+    function push(n, c) {
+      if (n === posBuf.length) {
+        const nb = new Int32Array(n * 2);
+        nb.set(posBuf);
+        posBuf = nb;
+      }
+      posBuf[n] = c;
+    }
+
+    // Horspool: salta por el último byte de la ventana.
+    function scanBmh(B, from, endC, base, maxCount) {
+      const n = B.length;
+      let count = 0, i = from + m - 1;
+      const iEnd = endC + m - 1;
+      while (i < iEnd) {
+        const b = B[i];
+        if (b === l1 || b === l2) {
+          const cand = i - m + 1;
+          if (accept(B, cand, base, n)) {
+            push(count++, cand);
+            if (count >= maxCount) break;
+            i = cand + m + m - 1;
+            continue;
+          }
+        }
+        i += skip[b];
+      }
+      return count;
+    }
+
+    // Coincidencias que empiezan en [from, endC). Devuelve cuántas hay (en posBuf).
+    function scan(B, from, endC, base, maxCount) {
+      if (endC <= from || maxCount <= 0) return 0;
+      if (strategy === 'bmh') return scanBmh(B, from, endC, base, maxCount);
+      const n = B.length;
+      let count = 0, c = from;
+      if (!dual) {
+        for (;;) {
+          const j = B.indexOf(a1, c + k);
+          if (j < 0) break;
+          const cand = j - k;
+          if (cand >= endC) break;
+          if (accept(B, cand, base, n)) {
+            push(count++, cand);
+            if (count >= maxCount) break;
+            c = cand + m;
+          } else c = cand + 1;
+        }
+      } else {
+        let x = B.indexOf(a1, c + k), y = B.indexOf(a2, c + k);
+        while (x >= 0 || y >= 0) {
+          const j = x < 0 ? y : (y < 0 ? x : (x < y ? x : y));
+          const cand = j - k;
+          if (cand >= endC) break;
+          if (accept(B, cand, base, n)) {
+            push(count++, cand);
+            if (count >= maxCount) break;
+            c = cand + m;
+          } else c = cand + 1;
+          const lim = c + k;
+          if (x >= 0 && x < lim) x = B.indexOf(a1, lim);
+          if (y >= 0 && y < lim) y = B.indexOf(a2, lim);
+        }
+      }
+      return count;
+    }
+
+    return { scan, positions: () => posBuf, counts: tally };
+  }
+
+  // Recorre el archivo por bloques. Para cada bloque llama a onBlock(B, from, cut, n, final).
+  async function walk({ pat, size, read, chunkSize, isCancelled, firstOnly, onBlock, onProgress, counts }) {
+    const sc = makeScanner(pat, counts);
+    const m = pat.m, la = pat.la, CTX = pat.ctx;
+    let carry = new Uint8Array(0), ctxLen = 0, base = 0, offset = 0;
+    let work = new Uint8Array(0);
+    let pending = size > 0 ? read(0, Math.min(chunkSize, size)) : null;
+    if (pending) pending.catch(() => {});
+    while (offset < size) {
+      if (isCancelled && isCancelled()) throw abortErr();
+      const chunk = await pending;
+      if (isCancelled && isCancelled()) throw abortErr();
+      if (!chunk || !chunk.length) throw Object.assign(new Error('Lectura vacía'), { kind: 'read' });
+      const end = offset + chunk.length;
+      pending = end < size ? read(end, Math.min(end + chunkSize, size)) : null;
+      if (pending) pending.catch(() => {});
+      const final = end >= size;
+      const blen = carry.length + chunk.length;
+      if (work.length < blen) work = new Uint8Array(Math.max(blen, Math.floor(work.length * 1.25)));
+      work.set(carry, 0);
+      work.set(chunk, carry.length);
+      const B = work.subarray(0, blen);
+      const endC = final ? blen - m + 1 : blen - m - la + 1;
+      const n = sc.scan(B, ctxLen, endC, base, firstOnly ? 1 : Infinity);
+      const P = sc.positions();
+      if (firstOnly && n) return base + P[0];
+      const cut = final ? blen : Math.max(endC, n ? P[n - 1] + m : 0, ctxLen);
+      if (onBlock) await onBlock(B, ctxLen, cut, n, P);
+      if (!final) {
+        const cs = cut > CTX ? cut - CTX : 0;
+        carry = B.slice(cs);
+        ctxLen = cut - cs;
+        base += cs;
+      }
+      offset = end;
+      if (onProgress) onProgress(end);
+    }
+    return -1;
+  }
+
+  // ======================================================================
+  // Cadena de pasos: varios cambios con una sola lectura del archivo
+  // ======================================================================
+  const HEAD = 64 << 10;
+  const EMPTY = new Uint8Array(0);
+  const isU16 = (enc) => enc === 'utf-16le' || enc === 'utf-16be';
+  const ctxFor = (enc) => (enc === 'windows-1252' ? 1 : 4);
+
+  function sides(enc) {
+    if (enc === 'utf-8') return [prevUtf8, nextUtf8];
+    if (enc === 'windows-1252') return [prevW, nextW];
+    const le = enc === 'utf-16le';
+    return [(B, i) => prev16(B, i, le), (B, i, n) => next16(B, i, n, le)];
+  }
+
+  function nlFinder(enc) {
+    if (!isU16(enc)) return (B, p, limit) => { const q = B.indexOf(0x0A, p); return q >= 0 && q < limit ? q : -1; };
+    if (enc === 'utf-16le') {
+      return (B, p, limit, base) => {
+        let q = B.indexOf(0x0A, p);
+        while (q >= 0 && q < limit) {
+          if (((base + q) & 1) === 0 && q + 1 < B.length && B[q + 1] === 0) return q;
+          q = B.indexOf(0x0A, q + 1);
+        }
+        return -1;
+      };
+    }
+    return (B, p, limit, base) => {
+      let x = B.indexOf(0x0A, p + 1);
+      while (x > 0 && x - 1 < limit) {
+        const q = x - 1;
+        if (((base + q) & 1) === 0 && B[q] === 0) return q;
+        x = B.indexOf(0x0A, x + 1);
+      }
+      return -1;
+    };
+  }
+  function crTest(enc) {
+    if (!isU16(enc)) return (B, q) => B[q] === 0x0D;
+    if (enc === 'utf-16le') return (B, q) => B[q] === 0x0D && B[q + 1] === 0;
+    return (B, q) => B[q] === 0 && B[q + 1] === 0x0D;
+  }
+  function countNL(find, B, from, to, base, w) {
+    let c = 0, p = from;
+    for (;;) {
+      const q = find(B, p, to, base);
+      if (q < 0) return c;
+      c++;
+      p = q + w;
+    }
+  }
+  function bomLength(head, enc) {
+    if (enc === 'utf-8') return head[0] === 0xEF && head[1] === 0xBB && head[2] === 0xBF ? 3 : 0;
+    if (enc === 'utf-16le') return head[0] === 0xFF && head[1] === 0xFE ? 2 : 0;
+    if (enc === 'utf-16be') return head[0] === 0xFE && head[1] === 0xFF ? 2 : 0;
+    return 0;
+  }
+
+  // Une lo que quedó pendiente del bloque anterior con el bloque nuevo sin copiar el bloque:
+  // escribe lo pendiente en el margen libre que hay justo antes de los datos.
+  function joinCarry(st, seg) {
+    const c = st.carry, cl = c.length, dl = seg.e - seg.s;
+    if (cl <= seg.s) {
+      if (cl) seg.buf.set(c, seg.s - cl);
+      return [seg.buf, seg.s - cl, cl + dl];
+    }
+    const need = HEAD + cl + dl;
+    if (!st.work || st.work.length < need) st.work = new Uint8Array(Math.max(need, st.work ? Math.floor(st.work.length * 1.25) : 0));
+    st.work.set(c, HEAD);
+    st.work.set(seg.buf.subarray(seg.s, seg.e), HEAD + cl);
+    return [st.work, HEAD, cl + dl];
+  }
+  function keepCarry(st, B, cut, final, ctxN) {
+    if (final) { st.carry = EMPTY; st.ctxLen = 0; return; }
+    const cs = cut > ctxN ? cut - ctxN : 0;
+    st.carry = B.slice(cs);
+    st.ctxLen = cut - cs;
+    st.base += cs;
+  }
+  function outBuf(st, need) {
+    const total = HEAD + need;
+    if (!st.out || st.out.length < total) st.out = new Uint8Array(Math.max(total, st.out ? Math.floor(st.out.length * 1.25) : 0));
+    return st.out;
+  }
+  function grow(a) { const b = new Int32Array(a.length * 2); b.set(a); return b; }
+  function copyInto(out, o, B, s, e) {
+    if (e - s > 48) { out.set(B.subarray(s, e), o); return o + (e - s); }
+    while (s < e) out[o++] = B[s++];
+    return o;
+  }
+  function putBytes(out, o, R) {
+    const r = R.length;
+    if (r > 24) { out.set(R, o); return o + r; }
+    for (let x = 0; x < r; x++) out[o++] = R[x];
+    return o;
+  }
+
+  // Paso «buscar y reemplazar» (un solo texto). skip: números de coincidencia que se dejan igual.
+  // st.counts.omitted: apariciones que «Omitir si hay…» dejó sin cambiar.
+  function ruleStage(pat, skip) {
+    const sc = makeScanner(pat);
+    const m = pat.m, R = pat.R, la = pat.la, CTX = pat.ctx;
+    const hasSkip = !!(skip && skip.size);
+    const st = { carry: EMPTY, ctxLen: 0, base: 0, work: null, out: null, count: 0, skipped: 0, occ: 0, counts: sc.counts };
+    st.process = (seg, final) => {
+      const [buf, off, blen] = joinCarry(st, seg);
+      const B = buf.subarray(off, off + blen), from = st.ctxLen;
+      const endC = final ? blen - m + 1 : blen - m - la + 1;
+      const n = sc.scan(B, from, endC, st.base, Infinity);
+      const P = sc.positions();
+      const cut = final ? blen : Math.max(endC, n ? P[n - 1] + m : 0, from);
+      let rep = n;
+      if (hasSkip) { rep = 0; for (let t = 0; t < n; t++) if (!skip.has(st.occ + t)) rep++; }
+      let res;
+      if (rep === 0) {
+        res = { buf, s: off + from, e: off + cut };
+      } else {
+        const out = outBuf(st, cut - from + rep * (R.length - m));
+        let o = HEAD, s = from;
+        for (let t = 0; t < n; t++) {
+          if (hasSkip && skip.has(st.occ + t)) continue;
+          const p = P[t];
+          o = copyInto(out, o, B, s, p);
+          o = putBytes(out, o, R);
+          s = p + m;
+        }
+        o = copyInto(out, o, B, s, cut);
+        res = { buf: out, s: HEAD, e: o };
+      }
+      st.count += rep;
+      st.skipped += n - rep;
+      st.occ += n;
+      keepCarry(st, B, cut, final, CTX);
+      return res;
+    };
+    return st;
+  }
+
+  // Lista de cambios aplicados a la vez (todos sobre el texto original, sin encadenarse):
+  // autómata de Aho-Corasick, gana la coincidencia que empieza antes y, si empiezan igual, la más larga.
+  function compileList(pairs, opts, enc) {
+    const caseSensitive = opts.caseSensitive !== false;
+    const wholeWord = !!opts.wholeWord;
+    const omit = normOmit(opts.omit);
+    const items = [], keys = new Map(), dups = [];
+    for (let idx = 0; idx < pairs.length; idx++) {
+      const find = pairs[idx][0], repl = pairs[idx][1];
+      const chars = Array.from(find);
+      if (!chars.length) continue;
+      const canon = [], alias = [];
+      for (const ch of chars) {
+        let c = ch;
+        if (!caseSensitive) {
+          const lo = ch.toLowerCase();
+          if (lo !== ch && Array.from(lo).length === 1 && encodeCp(lo.codePointAt(0), enc)) c = lo;
+        }
+        const cb = encodeCp(c.codePointAt(0), enc);
+        if (!cb) return { error: 'find', bad: ch, index: idx };
+        let at = -1, ab = 0;
+        if (!caseSensitive) {
+          for (const v of [c.toUpperCase(), ch]) {
+            if (v === c) continue;
+            const vs = Array.from(v);
+            if (vs.length !== 1) continue;
+            const e = encodeCp(vs[0].codePointAt(0), enc);
+            if (!e || e.length !== cb.length) continue;
+            let diff = 0, pos = -1;
+            for (let x = 0; x < e.length; x++) if (e[x] !== cb[x]) { diff++; pos = x; }
+            if (diff === 1) { at = pos; ab = e[pos]; break; }
+          }
+        }
+        for (let x = 0; x < cb.length; x++) { canon.push(cb[x]); alias.push(x === at ? ab : -1); }
+      }
+      const rr = encodeString(repl, enc);
+      if (rr.bad !== null) return { error: 'repl', bad: rr.bad, index: idx };
+      const key = canon.join(',');
+      if (keys.has(key)) { dups.push(idx); continue; }
+      keys.set(key, items.length);
+      items.push({
+        src: idx, canon, alias, R: rr.bytes,
+        b: wholeWord && isWordCp(chars[0].codePointAt(0)) ? 1 : 0,
+        a: wholeWord && isWordCp(chars[chars.length - 1].codePointAt(0)) ? 1 : 0
+      });
+    }
+    if (!items.length) return { error: 'empty' };
+
+    const kids = [new Map()], akids = [new Map()], term = [-1], depth = [0];
+    let inexact = false;
+    for (let pid = 0; pid < items.length; pid++) {
+      const it = items[pid];
+      let u = 0;
+      for (let x = 0; x < it.canon.length; x++) {
+        const b = it.canon[x];
+        let v = kids[u].get(b);
+        if (v === undefined) {
+          v = kids.length;
+          kids.push(new Map()); akids.push(new Map()); term.push(-1); depth.push(depth[u] + 1);
+          kids[u].set(b, v);
+        }
+        const a = it.alias[x];
+        if (a >= 0) {
+          const ex = akids[u].get(a);
+          if (ex === undefined) akids[u].set(a, v); else if (ex !== v) inexact = true;
+        }
+        u = v;
+      }
+      if (term[u] < 0) term[u] = pid;
+    }
+    for (let u = 0; u < kids.length && !inexact; u++) {
+      for (const [a, v] of akids[u]) { const c = kids[u].get(a); if (c !== undefined && c !== v) { inexact = true; break; } }
+    }
+    if (inexact && !caseSensitive) {
+      const r = compileList(pairs, Object.assign({}, opts, { caseSensitive: true }), enc);
+      if (!r.error) r.downgraded = true;
+      return r;
+    }
+
+    const N = kids.length;
+    const used = new Uint8Array(256);
+    for (let u = 0; u < N; u++) { for (const b of kids[u].keys()) used[b] = 1; for (const a of akids[u].keys()) used[a] = 1; }
+    const cls = new Uint16Array(256);
+    let K = 0;
+    for (let b = 0; b < 256; b++) if (used[b]) cls[b] = ++K;
+    const K1 = K + 1;
+    if (N * K1 > 25e6) return { error: 'big' };
+    const delta = new Int32Array(N * K1);
+    const fail = new Int32Array(N);
+    const order = [0];
+    for (let h = 0; h < order.length; h++) {
+      const u = order[h], row = u * K1;
+      if (u !== 0) delta.copyWithin(row, fail[u] * K1, fail[u] * K1 + K1);
+      for (const [b, v] of kids[u]) {
+        const c = cls[b];
+        fail[v] = u === 0 ? 0 : delta[row + c];
+        delta[row + c] = v;
+        order.push(v);
+      }
+      for (const [a, v] of akids[u]) if (!kids[u].has(a)) delta[row + cls[a]] = v;
+    }
+    const termA = Int32Array.from(term), depthA = Int32Array.from(depth);
+    const dict = new Int32Array(N).fill(-1), hasOut = new Uint8Array(N);
+    for (let h = 1; h < order.length; h++) {
+      const v = order[h], f = fail[v];
+      dict[v] = termA[f] >= 0 ? f : dict[f];
+      hasOut[v] = termA[v] >= 0 || dict[v] >= 0 ? 1 : 0;
+    }
+    for (let k = 0; k < delta.length; k++) { const v = delta[k]; delta[k] = ((v * K1) << 1) | hasOut[v]; }
+    const np = items.length;
+    const lens = new Int32Array(np), checkB = new Uint8Array(np), checkA = new Uint8Array(np), reps = new Array(np);
+    let maxLen = 0;
+    for (let pid = 0; pid < np; pid++) {
+      lens[pid] = items[pid].canon.length;
+      reps[pid] = items[pid].R;
+      checkB[pid] = items[pid].b;
+      checkA[pid] = items[pid].a;
+      if (lens[pid] > maxLen) maxLen = lens[pid];
+    }
+    const omitBefore = omit !== null && (omit.sides & OMIT.BEFORE) !== 0;
+    const omitAfter = omit !== null && (omit.sides & OMIT.AFTER) !== 0;
+    return {
+      n: np, src: items.map((it) => it.src), delta, cls, K1, term: termA, dict, depth: depthA, hasOut,
+      lens, reps, checkB, checkA, maxLen, align: isU16(enc) ? 2 : 1,
+      omit, omitKinds: omit ? omit.kinds : 0, omitBefore, omitAfter,
+      la: omitAfter ? SIDE_REACH : (wholeWord ? ctxFor(enc) : 0),
+      ctx: omit !== null ? SIDE_REACH : ctxFor(enc),
+      enc, dups, downgraded: false, states: N
+    };
+  }
+
+  function listStage(lp) {
+    const { delta, cls, K1, term, dict, depth, lens, reps, checkB, checkA, maxLen, la, align, enc,
+      omitKinds, omitBefore, omitAfter } = lp;
+    const CTX = lp.ctx;
+    const [prevCp, nextCp] = sides(enc);
+    const side = omitBefore || omitAfter ? sideReader(enc) : null;
+    const st = { carry: EMPTY, ctxLen: 0, base: 0, work: null, out: null, count: 0, counts: new Uint32Array(lp.n) };
+    let P = new Int32Array(1024), Q = new Int32Array(1024);
+    st.process = (seg, final) => {
+      const [buf, off, blen] = joinCarry(st, seg);
+      const B = buf.subarray(off, off + blen), from = st.ctxLen, base = st.base;
+      const scanLimit = final ? blen : blen - la;
+      let n = 0, i = from, x = 0, lastEnd = from, pend = -1, pPid = -1, pLen = 0;
+      for (;;) {
+        const lim = pend >= 0 && pend + maxLen < scanLimit ? pend + maxLen : scanLimit;
+        let hit = false;
+        while (i < lim) {
+          x = delta[(x >> 1) + cls[B[i]]];
+          i++;
+          if ((x & 1) !== 0) { hit = true; break; }
+        }
+        if (hit) {
+          let u = ((x >> 1) / K1) | 0;
+          if (term[u] < 0) u = dict[u];
+          while (u >= 0) {
+            const pid = term[u], len = depth[u], s = i - len;
+            if ((align === 1 || ((base + s) & 1) === 0) &&
+                (checkB[pid] === 0 || !isWordCp(prevCp(B, s))) &&
+                (checkA[pid] === 0 || !isWordCp(nextCp(B, i, blen))) &&
+                (side === null ||
+                  ((!omitBefore || (side.before(B, s) & omitKinds) === 0) &&
+                   (!omitAfter || (side.after(B, i, blen) & omitKinds) === 0)))) {
+              if (pend < 0 || s < pend || (s === pend && len > pLen)) { pend = s; pPid = pid; pLen = len; }
+              break;
+            }
+            u = dict[u];
+          }
+          if (pend < 0 || i - pend < maxLen) continue;
+        } else if (pend < 0 || (i - pend < maxLen && !(final && i >= scanLimit))) {
+          break;
+        }
+        if (n === P.length) { P = grow(P); Q = grow(Q); }
+        P[n] = pend; Q[n] = pPid; n++;
+        lastEnd = pend + pLen;
+        i = lastEnd;
+        x = 0;
+        pend = -1;
+      }
+      // Lo que aún podría ser el comienzo de una coincidencia sin terminar se vuelve a mirar en el bloque siguiente.
+      const cut = final ? blen : Math.max(lastEnd, scanLimit - maxLen + 1, from);
+      let res;
+      if (n === 0) {
+        res = { buf, s: off + from, e: off + cut };
+      } else {
+        let need = cut - from;
+        for (let t = 0; t < n; t++) need += reps[Q[t]].length - lens[Q[t]];
+        const out = outBuf(st, need);
+        let o = HEAD, s = from;
+        for (let t = 0; t < n; t++) {
+          const p = P[t], pid = Q[t];
+          o = copyInto(out, o, B, s, p);
+          o = putBytes(out, o, reps[pid]);
+          s = p + lens[pid];
+          st.counts[pid]++;
+        }
+        o = copyInto(out, o, B, s, cut);
+        res = { buf: out, s: HEAD, e: o };
+      }
+      st.count += n;
+      keepCarry(st, B, cut, final, CTX);
+      return res;
+    };
+    return st;
+  }
+
+  // Paso «cambiar el contenido de unas líneas». edits: [{ line, bytes }]; si una línea se repite, gana la última.
+  function lineStage(edits, enc, bom) {
+    const map = new Map();
+    for (const e of edits) map.set(e.line, e.bytes);
+    const targets = Array.from(map.keys()).sort((a, b) => a - b).map((line) => ({ line, bytes: map.get(line) }));
+    const w = isU16(enc) ? 2 : 1;
+    const nl = nlFinder(enc), cr = crTest(enc);
+    const st = { carry: EMPTY, ctxLen: 0, base: 0, work: null, out: null, done: [], lines: 0, ti: 0, mode: targets.length ? 0 : 2, bomLeft: bom || 0 };
+    st.process = (seg, final) => {
+      const [buf, off, blen] = joinCarry(st, seg);
+      const B = buf.subarray(off, off + blen), base = st.base, from = st.ctxLen;
+      const parts = [];
+      let p = from, cut = from, waiting = false;
+      let runStart = st.mode === 1 ? -1 : p;
+      if (st.bomLeft) {
+        if (blen - p >= st.bomLeft) { p += st.bomLeft; st.bomLeft = 0; }
+        else if (final) { p = blen; st.bomLeft = 0; }
+        else waiting = true;
+      }
+      if (!waiting) {
+        const limit = final ? blen : Math.max(p, blen - 4);
+        const finish = () => { st.done.push(targets[st.ti].line); st.ti++; st.mode = st.ti < targets.length ? 0 : 2; };
+        while (st.mode !== 2) {
+          const T = targets[st.ti];
+          if (st.mode === 0) {
+            if (st.lines === T.line - 1) {
+              if (runStart >= 0 && p > runStart) parts.push([runStart, p]);
+              parts.push(T.bytes);
+              runStart = -1;
+              st.mode = 1;
+              continue;
+            }
+            const q = nl(B, p, limit, base);
+            if (q < 0) { p = final ? blen : Math.max(p, limit); break; }
+            st.lines++;
+            p = q + w;
+            continue;
+          }
+          const q = nl(B, p, limit, base);
+          if (q < 0) {
+            if (final) { p = blen; finish(); runStart = p; continue; }
+            let e = limit;
+            if (w === 2 && ((base + e) & 1)) e--;
+            if (e - w >= p && cr(B, e - w)) e -= w;
+            if (e > p) p = e;
+            break;
+          }
+          let te = q;
+          if (q - w >= p && cr(B, q - w)) te = q - w;
+          p = te;
+          finish();
+          runStart = p;
+        }
+        cut = st.mode === 2 ? blen : p;
+      }
+      if (runStart >= 0 && cut > runStart) parts.push([runStart, cut]);
+      let res;
+      if (parts.length === 0) res = { buf, s: off + from, e: off + from };
+      else if (parts.length === 1 && Array.isArray(parts[0])) res = { buf, s: off + parts[0][0], e: off + parts[0][1] };
+      else {
+        let need = 0;
+        for (const x of parts) need += Array.isArray(x) ? x[1] - x[0] : x.length;
+        const out = outBuf(st, need);
+        let o = HEAD;
+        for (const x of parts) o = Array.isArray(x) ? copyInto(out, o, B, x[0], x[1]) : putBytes(out, o, x);
+        res = { buf: out, s: HEAD, e: o };
+      }
+      keepCarry(st, B, cut, final, 0);
+      return res;
+    };
+    return st;
+  }
+
+  // Lee el archivo una vez y pasa cada bloque por todos los pasos en orden.
+  async function runPipeline({ size, read, stages, write, chunkSize = 16 << 20, onProgress, isCancelled }) {
+    let inbuf = new Uint8Array(0);
+    const step = async (chunk, final) => {
+      const need = HEAD + chunk.length;
+      if (inbuf.length < need) inbuf = new Uint8Array(Math.max(need, Math.floor(inbuf.length * 1.25)));
+      inbuf.set(chunk, HEAD);
+      let seg = { buf: inbuf, s: HEAD, e: HEAD + chunk.length };
+      for (let k = 0; k < stages.length; k++) seg = stages[k].process(seg, final);
+      if (seg.e > seg.s) await write(seg.buf.subarray(seg.s, seg.e));
+    };
+    if (!size) { await step(EMPTY, true); return; }
+    let offset = 0;
+    let pending = read(0, Math.min(chunkSize, size));
+    pending.catch(() => {});
+    while (offset < size) {
+      if (isCancelled && isCancelled()) throw abortErr();
+      const chunk = await pending;
+      if (isCancelled && isCancelled()) throw abortErr();
+      if (!chunk || !chunk.length) throw Object.assign(new Error('Lectura vacía'), { kind: 'read' });
+      const end = offset + chunk.length;
+      pending = end < size ? read(end, Math.min(end + chunkSize, size)) : null;
+      if (pending) pending.catch(() => {});
+      await step(chunk, end >= size);
+      offset = end;
+      if (onProgress) onProgress(end);
+    }
+  }
+
+  // Reemplaza en todo el archivo. write(u8) debe terminar de usar los bytes antes de resolver.
+  async function streamReplace({ pat, size, read, write, chunkSize = 16 << 20, onProgress, isCancelled }) {
+    const st = ruleStage(pat);
+    await runPipeline({ size, read, stages: [st], write, chunkSize, isCancelled, onProgress: onProgress ? (d) => onProgress(d, st.count) : null });
+    return { count: st.count };
+  }
+
+  // Primeras coincidencias con su número de línea; se puede seguir desde «next».
+  async function findMatches({ pat, size, read, from, limit = 50, chunkSize = 16 << 20, isCancelled }) {
+    const sc = makeScanner(pat);
+    const m = pat.m, la = pat.la, CTX = pat.ctx, w = isU16(pat.enc) ? 2 : 1;
+    const nl = nlFinder(pat.enc);
+    const start = from ? from.offset : 0;
+    let line = from ? from.line : 1, occ = from ? from.occ : 0;
+    const items = [];
+    const cs0 = Math.max(0, start - CTX);
+    let carry = EMPTY, ctxLen = start - cs0, base = cs0, offset = cs0, nlPos = start;
+    let work = new Uint8Array(0);
+    while (offset < size) {
+      if (isCancelled && isCancelled()) throw abortErr();
+      const chunk = await read(offset, Math.min(size, offset + chunkSize));
+      if (!chunk.length) throw Object.assign(new Error('Lectura vacía'), { kind: 'read' });
+      const end = offset + chunk.length, final = end >= size;
+      const blen = carry.length + chunk.length;
+      if (work.length < blen) work = new Uint8Array(blen);
+      work.set(carry, 0);
+      work.set(chunk, carry.length);
+      const B = work.subarray(0, blen);
+      const endC = final ? blen - m + 1 : blen - m - la + 1;
+      const n = sc.scan(B, ctxLen, endC, base, limit - items.length);
+      const P = sc.positions();
+      for (let t = 0; t < n; t++) {
+        line += countNL(nl, B, nlPos - base, P[t], base, w);
+        nlPos = base + P[t];
+        items.push({ offset: nlPos, line, occ: occ++ });
+      }
+      if (items.length >= limit) return { items, next: { offset: items[items.length - 1].offset + m, line, occ } };
+      const cut = final ? blen : Math.max(endC, n ? P[n - 1] + m : 0, ctxLen);
+      line += countNL(nl, B, nlPos - base, cut, base, w);
+      nlPos = base + cut;
+      if (final) break;
+      const cs = cut > CTX ? cut - CTX : 0;
+      carry = B.slice(cs);
+      ctxLen = cut - cs;
+      base += cs;
+      offset = end;
+    }
+    return { items, next: null };
+  }
+
+  // Índice de líneas: guarda dónde empieza cada línea número K·j+1, y se completa solo cuando hace falta.
+  class LineIndex {
+    constructor(read, size, enc, bom, opts) {
+      this.read = read; this.size = size; this.enc = enc; this.bom = bom || 0;
+      this.w = isU16(enc) ? 2 : 1;
+      this.nl = nlFinder(enc); this.cr = crTest(enc);
+      this.K = (opts && opts.K) || 4096;
+      const ch = (opts && opts.chunk) || (16 << 20);
+      this.chunk = ch + (ch & 1);
+      this.starts = [this.bom];
+      this.pos = this.bom;
+      this.lines = 0;
+      this.done = this.pos >= size;
+      this.total = this.done ? 1 : 0;
+    }
+    async extend(block, isCancelled, onProgress) {
+      while (!this.done && this.starts.length <= block) {
+        if (isCancelled && isCancelled()) throw abortErr();
+        const s = this.pos, e = Math.min(this.size, s + this.chunk);
+        const B = await this.read(s, e);
+        let p = 0;
+        for (;;) {
+          const q = this.nl(B, p, B.length, s);
+          if (q < 0) break;
+          this.lines++;
+          if (this.lines % this.K === 0) this.starts.push(s + q + this.w);
+          p = q + this.w;
+        }
+        this.pos = e;
+        if (e >= this.size) { this.done = true; this.total = this.lines + 1; }
+        if (onProgress) onProgress(e, this.size);
+      }
+    }
+    async locate(N, isCancelled, onProgress) {
+      if (!(N >= 1)) return -1;
+      const blk = Math.floor((N - 1) / this.K);
+      await this.extend(blk, isCancelled, onProgress);
+      if (blk >= this.starts.length) return -1;
+      let off = this.starts[blk], need = (N - 1) - blk * this.K;
+      while (need > 0) {
+        if (off >= this.size) return -1;
+        const e = Math.min(this.size, off + (1 << 20));
+        const B = await this.read(off, e);
+        let p = 0;
+        while (need > 0) {
+          const q = this.nl(B, p, B.length, off);
+          if (q < 0) break;
+          need--;
+          p = q + this.w;
+        }
+        if (need === 0) { off += p; break; }
+        off = e;
+      }
+      return off;
+    }
+    async readLines(N, count, maxBytes, onProgress) {
+      const cap = (maxBytes || 2000) & ~1;
+      const out = [];
+      let off = await this.locate(N, null, onProgress);
+      if (off < 0) return out;
+      let n = N;
+      while (out.length < count) {
+        let pos = off, nlAt = -1;
+        while (nlAt < 0 && pos < this.size) {
+          const e = Math.min(this.size, pos + (256 << 10));
+          const B = await this.read(pos, e);
+          const q = this.nl(B, 0, B.length, pos);
+          if (q >= 0) nlAt = pos + q; else pos = e;
+        }
+        let end = nlAt < 0 ? this.size : nlAt;
+        if (nlAt >= 0 && nlAt - this.w >= off && this.cr(await this.read(nlAt - this.w, nlAt), 0)) end = nlAt - this.w;
+        const len = end - off, shown = Math.min(len, cap);
+        const text = shown > 0 ? new TextDecoder(this.enc).decode(await this.read(off, off + shown), { stream: shown < len }) : '';
+        out.push({ n, start: off, end, len, text, cut: shown < len, last: nlAt < 0 });
+        if (nlAt < 0) break;
+        off = nlAt + this.w;
+        n++;
+      }
+      return out;
+    }
+    // Índice de la versión nueva tras cambiar el contenido [at, end) de una línea por otro de distinto tamaño.
+    shifted(read, size, at, end, delta) {
+      const x = new LineIndex(read, size, this.enc, this.bom, { K: this.K, chunk: this.chunk });
+      x.starts = this.starts.map((v) => (v > at ? v + delta : v));
+      x.pos = this.pos <= at ? this.pos : (this.pos <= end ? at : this.pos + delta);
+      x.lines = this.lines;
+      x.done = this.done && x.pos >= size;
+      x.total = x.done ? this.total : 0;
+      return x;
+    }
+  }
+
+  // Posición (en bytes) de la primera coincidencia, o -1. Si no hay ninguna, counts ({ inWord, omitted })
+  // dice cuántas apariciones descartaron las opciones.
+  function findFirst({ pat, size, read, chunkSize = 16 << 20, isCancelled, onProgress, counts }) {
+    return walk({ pat, size, read, chunkSize, isCancelled, firstOnly: true, onProgress, counts });
+  }
+
+  // Texto alrededor de una coincidencia, para la vista previa.
+  async function contextAround({ pat, size, read, at, span = 200 }) {
+    const enc = pat.enc, m = pat.m;
+    let s = Math.max(0, at - span);
+    if (pat.align === 2 && ((at - s) & 1)) s++;
+    const e = Math.min(size, at + m + span);
+    const bytes = await read(s, e);
+    const k = at - s;
+    let i0 = 0;
+    if (enc === 'utf-8') {
+      while (i0 < k && i0 < 3 && (bytes[i0] & 0xC0) === 0x80) i0++;
+    } else if (pat.align === 2 && k >= 2) {
+      const u = enc === 'utf-16le' ? (bytes[0] | (bytes[1] << 8)) : ((bytes[0] << 8) | bytes[1]);
+      if (u >= 0xDC00 && u <= 0xDFFF) i0 = 2;
+    }
+    const dec = (u8) => new TextDecoder(enc).decode(u8, { stream: true });
+    return {
+      before: dec(bytes.subarray(i0, k)),
+      match: dec(bytes.subarray(k, k + m)),
+      after: dec(bytes.subarray(k + m)),
+      fromStart: s === 0,
+      toEnd: e === size
+    };
+  }
+
+  // ---------- Detectar codificación ----------
+  function validUtf8(u8, skipLead) {
+    let i = 0;
+    if (skipLead) while (i < 3 && i < u8.length && (u8[i] & 0xC0) === 0x80) i++;
+    try {
+      new TextDecoder('utf-8', { fatal: true }).decode(u8.subarray(i), { stream: true });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function detect(read, size) {
+    if (!size) return { enc: 'utf-8', bom: 0, freq: null };
+    const first = await read(0, Math.min(size, 2 << 20));
+    const freq = new Uint32Array(256);
+    for (let i = 0; i < first.length; i++) freq[first[i]]++;
+    let enc = null, bom = 0;
+    if (first[0] === 0xEF && first[1] === 0xBB && first[2] === 0xBF) { enc = 'utf-8'; bom = 3; }
+    else if (first[0] === 0xFF && first[1] === 0xFE) { enc = 'utf-16le'; bom = 2; }
+    else if (first[0] === 0xFE && first[1] === 0xFF) { enc = 'utf-16be'; bom = 2; }
+    if (!enc) {
+      const n = Math.min(first.length, 1 << 16) & ~1;
+      const half = n / 2;
+      let z0 = 0, z1 = 0;
+      for (let i = 0; i < n; i += 2) { if (first[i] === 0) z0++; if (first[i + 1] === 0) z1++; }
+      if (half >= 8 && z1 > half * 0.3 && z0 < half * 0.05) enc = 'utf-16le';
+      else if (half >= 8 && z0 > half * 0.3 && z1 < half * 0.05) enc = 'utf-16be';
+    }
+    if (!enc) {
+      let ok = validUtf8(first, false);
+      if (ok && size > first.length) {
+        const S = 256 << 10, N = 8;
+        for (let t = 1; t <= N && ok; t++) {
+          const start = Math.max(0, Math.floor((size - S) * t / N));
+          ok = validUtf8(await read(start, Math.min(size, start + S)), true);
+        }
+      }
+      enc = ok ? 'utf-8' : 'windows-1252';
+    }
+    return { enc, bom, freq };
+  }
+
+  return {
+    compile, compileList, ruleStage, listStage, lineStage, runPipeline, streamReplace,
+    findFirst, findMatches, contextAround, detect, encodeString, isWordCp, LineIndex, bomLength,
+    OMIT, normOmit, charKind
+  };
+})();
+
+(() => {
+  'use strict';
+  const E = TxtEngine;
+  const $ = (id) => document.getElementById(id);
+  const nf0 = new Intl.NumberFormat('es-ES');
+  const nf1 = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const CHUNK = 16 << 20;
+  const PAGE = 9;
+  const EDIT_MAX = 100000;
+  const CTX_PREVIEW = 8000, CTX_MATCH = 2000;
+  const SKEY = 'reemplazar-txt:';
+  const framed = (() => { try { return window.top !== window; } catch (_) { return true; } })();
+  const hasViewer = !!(window.claude && typeof window.claude.use === 'function');
+  const downloadsReady = hasViewer ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+  const SAVE_EXT = ['.txt', '.csv', '.json', '.md', '.html'];
+  const TEXT_NAME = /\.(txt|csv|tsv|log|md|json|xml|html?|sql|srt|vtt|ini|ya?ml|conf|cfg)$/i;
+  const ENC_LABEL = { 'utf-8': 'UTF-8', 'windows-1252': 'Windows (ANSI)', 'utf-16le': 'UTF-16 LE', 'utf-16be': 'UTF-16 BE' };
+
+  const ui = {};
+  for (const id of ['drop', 'dropTitle', 'chooseBtn', 'fileInput', 'fileBox', 'fileName', 'fileSize', 'encSel', 'changeBtn',
+    'openViewer', 'fileNote', 'resume', 'resumeText', 'resumeYes', 'resumeNo', 'viewer', 'lineInput', 'lineGo', 'lineTotal',
+    'viewerClose', 'lineList', 'linePrev', 'lineNext', 'viewerNote', 'find', 'repl', 'findNote', 'replNote', 'optCase',
+    'optWord', 'omitBox', 'omitNote', 'openList', 'listBox', 'listText', 'listNote', 'listApply', 'listUploadBtn',
+    'listClose', 'listFile', 'proof', 'proofCap', 'openMatches', 'proofLine', 'matchBox', 'matchHead', 'matchClose',
+    'matchList', 'matchMore', 'applyBtn', 'applyNote', 'flash', 'opsBox', 'opList', 'exportBtn', 'saveBar', 'sbCount',
+    'sbStatus', 'stopBtn', 'saveBtn', 'saveNote', 'themeLight', 'themeDark']) {
+    ui[id] = $(id);
+    if (!ui[id]) console.error('Falta el elemento', id);
+  }
+
+  const S = {
+    file: null, name: '', enc: 'utf-8', detected: null, head: null, freq: null, ready: false, fileTok: 0,
+    ops: [], cur: null, prev: null, origIdx: null, run: null, ver: 0,
+    pat: null, noMatch: false, scanTok: 0, shownKey: '', shownNoMatch: false, shownCap: '',
+    skip: new Set(), skipKey: '', mm: null, listPairs: null, saveWanted: false, pendingSession: null,
+    persistFailed: false, runRows: [], viewer: { open: false, top: 1, target: 1, editing: 0, editText: '', tok: 0 }
+  };
+  let opSeq = 0;
+
+  // ---------- Utilidades ----------
+  const show = (el, on = true) => { el.hidden = !on; };
+  function note(el, text, kind) {
+    el.textContent = text || '';
+    el.hidden = !text;
+    el.classList.toggle('err', kind === 'err');
+    el.classList.toggle('on', kind === 'on');
+  }
+  const flash = (text, kind) => note(ui.flash, text, kind);
+  const q = (s) => '«' + s + '»';
+  const fmtN = (n) => nf0.format(n);
+  function clip(s, n) { const a = Array.from(s); return a.length > n ? a.slice(0, n).join('') + '…' : s; }
+  function fmtSize(b) {
+    if (b < 1024) return fmtN(Math.round(b)) + ' bytes';
+    const u = ['KB', 'MB', 'GB', 'TB'];
+    let v = b / 1024, i = 0;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return nf1.format(v) + ' ' + u[i];
+  }
+  function fmtTime(sec) {
+    if (sec < 10) return nf1.format(sec) + ' s';
+    const t = Math.round(sec);
+    if (t < 60) return t + ' s';
+    const m = Math.floor(t / 60), s = t % 60;
+    return m + ' min' + (s ? ' ' + s + ' s' : '');
+  }
+  function el(tag, cls, text) {
+    const x = document.createElement(tag);
+    if (cls) x.className = cls;
+    if (text !== undefined) x.textContent = text;
+    return x;
+  }
+  function button(cls, text, onClick) {
+    const b = el('button', cls, text);
+    b.type = 'button';
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  const reader = (blob) => (s, e) => blob.slice(s, e).arrayBuffer().then(
+    (b) => new Uint8Array(b),
+    (err) => { throw Object.assign(new Error('read'), { kind: 'read', cause: err }); }
+  );
+  function outputName(name) {
+    const m = /^(.*?)(\.[^.\s]{1,8})?$/.exec(name) || [];
+    let base = (m[1] || '').trim() || 'archivo';
+    let ext = (m[2] || '.txt').toLowerCase();
+    if (hasViewer && !SAVE_EXT.includes(ext)) ext = '.txt';
+    if (!/-reemplazado$/i.test(base)) base += '-reemplazado';
+    return base + ext;
+  }
+  const busy = () => !!S.run || (!!S.cur && S.cur.n < S.ops.length);
+  const bomNow = () => (S.head ? E.bomLength(S.head, S.enc) : 0);
+  function errorText(err) {
+    const kind = err && err.kind;
+    if (kind === 'read') return 'No se pudo leer el archivo. Si lo moviste o lo cambiaste, vuelve a abrirlo.';
+    if (kind === 'mem') return 'El navegador se quedó sin espacio para preparar el archivo. Cierra otras pestañas y prueba otra vez.';
+    return 'Algo falló al aplicar los cambios. Prueba otra vez.';
+  }
+  function decodeText(u8) {
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(u8); }
+    catch (_) { return new TextDecoder('windows-1252').decode(u8); }
+  }
+  function renderEnc() {
+    for (const opt of ui.encSel.options) opt.textContent = ENC_LABEL[opt.value] + (opt.value === S.detected ? ' (detectada)' : '');
+    ui.encSel.value = S.enc;
+    ui.encSel.disabled = !S.ready || S.ops.length > 0;
+    ui.encSel.title = S.ops.length ? 'Quita los cambios para cambiar la codificación' : '';
+  }
+
+  // ---------- Omitir según lo que hay al lado ----------
+  // Dos grupos de botones que se suman: qué carácter (número, letra, especial) y en qué lado (antes, después).
+  // Basta con que se cumpla una combinación para dejar esa coincidencia sin cambiar.
+  /** @type {{ kinds: number, sides: number }} */
+  const omitSel = { kinds: 0, sides: 0 };
+  /** @type {{ el: HTMLElement, group: 'kinds' | 'sides', bit: number }[]} */
+  const omitChips = Array.from(ui.omitBox.querySelectorAll('.chip'), (b) => {
+    const kind = b.dataset.kind, side = b.dataset.side;
+    const bit = E.OMIT[String(kind || side || '').toUpperCase()] || 0;
+    if (!bit) console.error('Botón sin significado en «Omitir si hay»', b);
+    return { el: b, group: kind ? 'kinds' : 'sides', bit };
+  });
+
+  /** @returns {{ kinds: number, sides: number } | null} la regla elegida, o null si no omite nada */
+  const omitRule = () => E.normOmit(omitSel);
+  /** @returns {boolean} true si hay botones de un solo grupo: la regla está a medias */
+  const omitPending = () => (omitSel.kinds !== 0) !== (omitSel.sides !== 0);
+  /** @param {{ kinds: number, sides: number } | null | undefined} om */
+  const omitKey = (om) => (om ? om.kinds + '.' + om.sides : '');
+
+  /**
+   * La regla en palabras: «justo antes hay un número o una letra».
+   * @param {{ kinds: number, sides: number }} om
+   * @returns {string}
+   */
+  function omitPhrase(om) {
+    const what = [];
+    if (om.kinds & E.OMIT.NUMBER) what.push('un número');
+    if (om.kinds & E.OMIT.LETTER) what.push('una letra');
+    if (om.kinds & E.OMIT.SPECIAL) what.push('un carácter especial');
+    const list = what.length > 1 ? what.slice(0, -1).join(', ') + ' o ' + what[what.length - 1] : what[0];
+    const before = (om.sides & E.OMIT.BEFORE) !== 0, after = (om.sides & E.OMIT.AFTER) !== 0;
+    const where = before && after ? 'justo antes o justo después' : before ? 'justo antes' : 'justo después';
+    return `${where} hay ${list}`;
+  }
+
+  function paintOmit() {
+    for (const c of omitChips) c.el.setAttribute('aria-pressed', String((omitSel[c.group] & c.bit) !== 0));
+    const om = omitRule();
+    if (om) note(ui.omitNote, `No se cambia si ${omitPhrase(om)}.`, 'on');
+    else if (omitSel.kinds) note(ui.omitNote, 'Marca también dónde mirar: Antes, Después o los dos.', 'err');
+    else if (omitSel.sides) note(ui.omitNote, 'Marca también qué carácter: Número, Letra o Carácter especial.', 'err');
+    else note(ui.omitNote, 'Marca uno o varios de cada grupo. Carácter especial es cualquier signo o símbolo (. , - _ @ # ¿ ?); los espacios y saltos de línea no cuentan.');
+  }
+
+  /** @param {{ group: 'kinds' | 'sides', bit: number }} c */
+  function toggleOmit(c) {
+    omitSel[c.group] ^= c.bit;
+    paintOmit();
+    refresh();
+    if (!ui.listBox.hidden) parseListNow();
+  }
+
+  // ---------- Archivo ----------
+  async function setFile(file) {
+    if (S.run) S.run.cancel = true;
+    const tok = ++S.fileTok;
+    Object.assign(S, {
+      file, name: file.name || 'archivo.txt', ready: false, ops: [], cur: { blob: file, n: 0, idx: null }, prev: null,
+      origIdx: null, ver: S.ver + 1, freq: null, head: null, detected: null, saveWanted: false, pendingSession: null,
+      skip: new Set(), skipKey: '', shownKey: ''
+    });
+    ui.fileName.textContent = S.name;
+    ui.fileSize.textContent = fmtSize(file.size);
+    show(ui.drop, false);
+    show(ui.fileBox, true);
+    show(ui.resume, false);
+    document.body.classList.add('has-file');
+    closeViewer();
+    closeMatches();
+    flash('');
+    note(ui.saveNote, '');
+    const looksText = TEXT_NAME.test(S.name) || (file.type || '').startsWith('text/');
+    note(ui.fileNote, looksText ? '' : 'Este archivo no parece de texto. El resultado podría no abrirse bien.');
+    renderEnc();
+    renderOps();
+    refresh();
+    try {
+      const info = await E.detect(reader(file), file.size);
+      const head = await reader(file)(0, Math.min(file.size, 4));
+      if (tok !== S.fileTok) return;
+      Object.assign(S, { freq: info.freq, detected: info.enc, enc: info.enc, head, ready: true });
+    } catch (_) {
+      if (tok !== S.fileTok) return;
+      note(ui.fileNote, 'No se pudo leer el archivo. Prueba a abrirlo otra vez.', 'err');
+    }
+    renderEnc();
+    offerSession();
+    refresh();
+  }
+
+  // ---------- Recordar la lista de cambios ----------
+  const sessionKey = () => SKEY + [S.file.name, S.file.size, S.file.lastModified].join('|');
+  /** @param {{ kinds: number, sides: number } | null | undefined} om */
+  const omitSer = (om) => (om ? [om.kinds, om.sides] : undefined);
+  /** @param {unknown} x */
+  const omitDeser = (x) => (Array.isArray(x) ? E.normOmit({ kinds: Number(x[0]), sides: Number(x[1]) }) : null);
+  function ser(op) {
+    if (op.kind === 'rule') return { k: 'r', f: op.find, r: op.repl, cs: op.cs, ww: op.ww, om: omitSer(op.om), s: op.skip && op.skip.size ? Array.from(op.skip) : undefined };
+    if (op.kind === 'list') return { k: 'l', p: op.pairs, cs: op.cs, ww: op.ww, om: omitSer(op.om) };
+    return { k: 'n', n: op.line, t: op.text };
+  }
+  const newOp = (o) => Object.assign({ id: ++opSeq, status: 'pending', count: 0 }, o);
+  function deser(x) {
+    if (!x) return null;
+    if (x.k === 'r') return newOp({ kind: 'rule', find: String(x.f), repl: String(x.r), cs: !!x.cs, ww: !!x.ww, om: omitDeser(x.om), skip: Array.isArray(x.s) ? new Set(x.s) : null });
+    if (x.k === 'l' && Array.isArray(x.p)) return newOp({ kind: 'list', pairs: x.p.map((p) => [String(p[0]), String(p[1])]), cs: !!x.cs, ww: !!x.ww, om: omitDeser(x.om) });
+    if (x.k === 'n') return newOp({ kind: 'line', line: Number(x.n), text: String(x.t) });
+    return null;
+  }
+  function compileOp(op) {
+    if (op.kind === 'rule') {
+      const p = E.compile(op.find, op.repl, { caseSensitive: op.cs, wholeWord: op.ww, omit: op.om }, S.enc, S.freq);
+      if (p.error) return false;
+      op.pat = p;
+      return true;
+    }
+    if (op.kind === 'list') {
+      const lp = E.compileList(op.pairs, { caseSensitive: op.cs, wholeWord: op.ww, omit: op.om }, S.enc);
+      if (lp.error) return false;
+      op.lp = lp;
+      return true;
+    }
+    const r = E.encodeString(op.text, S.enc);
+    if (r.bad !== null || !(op.line >= 1)) return false;
+    op.bytes = r.bytes;
+    return true;
+  }
+  let persistT = 0;
+  function persist() {
+    clearTimeout(persistT);
+    persistT = setTimeout(() => {
+      if (!S.file || S.pendingSession) return;
+      try {
+        const key = sessionKey();
+        if (!S.ops.length) { localStorage.removeItem(key); return; }
+        localStorage.setItem(key, JSON.stringify({ v: 1, at: Date.now(), enc: S.enc, ops: S.ops.map(ser) }));
+        prune();
+        S.persistFailed = false;
+      } catch (_) {
+        if (!S.persistFailed) { S.persistFailed = true; flash('Este navegador no deja recordar la lista de cambios. Guarda el archivo antes de cerrar la página.', 'err'); }
+      }
+    }, 300);
+  }
+  function prune() {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(SKEY)) keys.push(k); }
+    if (keys.length <= 30) return;
+    const ages = keys.map((k) => { try { return [k, JSON.parse(localStorage.getItem(k)).at || 0]; } catch (_) { return [k, 0]; } });
+    ages.sort((a, b) => a[1] - b[1]);
+    for (let i = 0; i < ages.length - 30; i++) localStorage.removeItem(ages[i][0]);
+  }
+  function offerSession() {
+    if (!S.ready) return;
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(sessionKey()) || 'null'); } catch (_) { s = null; }
+    if (!s || !Array.isArray(s.ops) || !s.ops.length) return;
+    S.pendingSession = s;
+    const n = s.ops.length;
+    ui.resumeText.textContent = `Tienes ${fmtN(n)} ${n === 1 ? 'cambio' : 'cambios'} de la última vez con este archivo.`;
+    show(ui.resume, true);
+  }
+  function resumeSession() {
+    const s = S.pendingSession;
+    S.pendingSession = null;
+    show(ui.resume, false);
+    if (!s || S.ops.length) return;
+    if (ENC_LABEL[s.enc]) S.enc = s.enc;
+    let lost = 0;
+    for (const x of s.ops) {
+      const op = deser(x);
+      if (op && compileOp(op)) S.ops.push(op); else lost++;
+    }
+    if (lost) flash(`${fmtN(lost)} ${lost === 1 ? 'cambio no se pudo' : 'cambios no se pudieron'} recuperar.`, 'err');
+    renderEnc();
+    persist();
+    renderOps();
+    schedule();
+    refresh();
+  }
+  function discardSession() {
+    S.pendingSession = null;
+    show(ui.resume, false);
+    try { localStorage.removeItem(sessionKey()); } catch (_) {}
+  }
+
+  // ---------- Cambios y su aplicación ----------
+  function addOps(ops) {
+    if (S.pendingSession) { S.pendingSession = null; show(ui.resume, false); }
+    S.ops.push(...ops);
+    flash('');
+    persist();
+    renderOps();
+    schedule();
+  }
+
+  function schedule() {
+    if (S.run || !S.ready || !S.cur) return;
+    if (S.cur.n < S.ops.length) { runBatch(); return; }
+    renderOps();
+    if (S.saveWanted) { S.saveWanted = false; save(); }
+  }
+
+  function buildStages(batch) {
+    const out = [];
+    let group = null;
+    for (const op of batch) {
+      if (op.kind === 'line') {
+        if (!group) { group = []; out.push({ lines: group }); }
+        group.push(op);
+        continue;
+      }
+      group = null;
+      if (op.kind === 'rule') {
+        const st = E.ruleStage(op.pat, op.skip);
+        out.push({ st, collect: () => { op.count = st.count; op.skipped = st.skipped; op.omitted = st.counts.omitted; } });
+      } else {
+        const st = E.listStage(op.lp);
+        out.push({ st, collect: () => { op.count = st.count; op.counts = Array.from(st.counts); } });
+      }
+    }
+    const bom = bomNow();
+    for (const x of out) {
+      if (!x.lines) continue;
+      const ops = x.lines;
+      x.st = E.lineStage(ops.map((o) => ({ line: o.line, bytes: o.bytes })), S.enc, bom);
+      x.collect = () => { const done = new Set(x.st.done); for (const o of ops) o.applied = done.has(o.line); };
+    }
+    return out;
+  }
+
+  let lastPaint = 0;
+  function paintProgress(done, size, t0) {
+    const now = performance.now();
+    if (done < size && now - lastPaint < 80) return;
+    lastPaint = now;
+    const pct = size ? Math.min(100, (done / size) * 100) : 100;
+    const secs = (now - t0) / 1000, speed = secs > 0.25 ? done / secs : 0;
+    for (const r of S.runRows) { r.fill.style.width = pct.toFixed(2) + '%'; r.meta.textContent = `aplicando… ${Math.floor(pct)} %`; }
+    ui.sbStatus.textContent = `Aplicando… ${Math.floor(pct)} %` + (speed && done < size ? `, faltan ${fmtTime((size - done) / speed)}` : '');
+  }
+
+  async function runBatch() {
+    const base = S.cur, batch = S.ops.slice(base.n), tok = S.fileTok;
+    const run = { cancel: false, batch, after: [] };
+    S.run = run;
+    for (const op of batch) op.status = 'running';
+    renderOps();
+    refresh();
+    const stages = buildStages(batch);
+    const parts = [], size = base.blob.size, t0 = performance.now();
+    let failed = null;
+    try {
+      await E.runPipeline({
+        size, read: reader(base.blob), stages: stages.map((x) => x.st), chunkSize: CHUNK,
+        write: (u8) => {
+          try { parts.push(new Blob([u8])); }
+          catch (err) { throw Object.assign(new Error('mem'), { kind: 'mem', cause: err }); }
+        },
+        isCancelled: () => run.cancel || tok !== S.fileTok,
+        onProgress: (d) => paintProgress(d, size, t0)
+      });
+    } catch (err) {
+      failed = err || new Error('fallo');
+    }
+    S.run = null;
+    if (tok !== S.fileTok) return;
+    if (!failed) {
+      const blob = new Blob(parts, { type: 'text/plain' });
+      for (const x of stages) x.collect();
+      for (const op of batch) op.status = 'done';
+      S.prev = base;
+      S.cur = { blob, n: base.n + batch.length, idx: null };
+      S.ver++;
+    } else {
+      for (const op of batch) op.status = 'pending';
+      if (failed.name !== 'AbortError') {
+        S.ops = S.ops.filter((op) => !batch.includes(op));
+        flash(errorText(failed) + ' Los cambios que se estaban aplicando se quitaron de la lista.', 'err');
+      }
+    }
+    for (const fn of run.after) fn();
+    persist();
+    renderOps();
+    refresh();
+    if (S.viewer.open) renderViewer();
+    schedule();
+  }
+
+  function stopRun() {
+    const run = S.run;
+    if (!run) return;
+    run.cancel = true;
+    run.after.push(() => {
+      S.ops = S.ops.filter((op) => !run.batch.includes(op));
+      flash('Detenido. Esos cambios se quitaron de la lista.');
+    });
+  }
+
+  function removeOp(id) {
+    const k = S.ops.findIndex((o) => o.id === id);
+    if (k < 0) return;
+    const op = S.ops[k];
+    if (S.run) {
+      if (!S.run.batch.includes(op)) { S.ops.splice(k, 1); persist(); renderOps(); return; }
+      S.run.cancel = true;
+      S.run.after.push(() => removeOp(id));
+      return;
+    }
+    if (k >= S.cur.n) {
+      S.ops.splice(k, 1);
+    } else {
+      if (S.prev && S.prev.n <= k) S.cur = S.prev;
+      else S.cur = { blob: S.file, n: 0, idx: S.origIdx };
+      S.prev = null;
+      S.ops.splice(k, 1);
+      for (let j = S.cur.n; j < S.ops.length; j++) S.ops[j].status = 'pending';
+      S.ver++;
+    }
+    flash('');
+    persist();
+    renderOps();
+    refresh();
+    if (S.viewer.open) renderViewer();
+    schedule();
+  }
+
+  function optsText(op) {
+    const a = [];
+    if (!op.cs) a.push('sin distinguir mayúsculas');
+    if (op.ww) a.push('solo palabras completas');
+    if (op.om) a.push(`no se cambia si ${omitPhrase(op.om)}`);
+    const t = a.join(', ');
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+  }
+  function statusText(op) {
+    if (op.status === 'pending') return 'en cola';
+    if (op.status === 'running') return 'aplicando…';
+    if (op.kind === 'line') return op.applied ? 'editada' : 'esa línea no existe';
+    const omitted = op.omitted ? `, ${fmtN(op.omitted)} ${op.omitted === 1 ? 'omitido' : 'omitidos'}` : '';
+    if (!op.count) return 'sin cambios' + omitted;
+    let t = `${fmtN(op.count)} ${op.count === 1 ? 'cambio' : 'cambios'}`;
+    if (op.skipped) t += `, ${fmtN(op.skipped)} sin cambiar`;
+    return t + omitted;
+  }
+  function listDetails(op) {
+    const d = el('details');
+    d.append(el('summary', '', 'Ver cada cambio'));
+    const table = el('table');
+    const counts = new Map();
+    op.lp.src.forEach((src, pid) => counts.set(src, op.counts[pid]));
+    const max = Math.min(op.pairs.length, 300);
+    for (let i = 0; i < max; i++) {
+      const [f, r] = op.pairs[i];
+      const tr = el('tr');
+      tr.append(el('td', '', `${clip(f, 40)} → ${r === '' ? '(borrar)' : clip(r, 40)}`), el('td', '', counts.has(i) ? fmtN(counts.get(i)) : 'repetido'));
+      table.append(tr);
+    }
+    d.append(table);
+    if (op.pairs.length > max) d.append(el('p', 'op-sub', `Y ${fmtN(op.pairs.length - max)} más.`));
+    return d;
+  }
+  function opRow(op) {
+    const li = el('li');
+    const main = el('div', 'op-main');
+    let what, sub;
+    if (op.kind === 'rule') {
+      what = `${clip(op.find, 60)} → ${op.repl === '' ? '(borrar)' : clip(op.repl, 60)}`;
+      sub = optsText(op);
+    } else if (op.kind === 'list') {
+      what = `Lista de ${fmtN(op.pairs.length)} ${op.pairs.length === 1 ? 'cambio' : 'cambios'}`;
+      sub = optsText(op);
+    } else {
+      what = `Línea ${fmtN(op.line)}`;
+      sub = op.text === '' ? 'Ahora vacía' : clip(op.text, 80);
+    }
+    const meta = el('span', 'op-meta', statusText(op));
+    main.append(el('span', 'op-what', what), meta, button('linklike', 'Quitar', () => removeOp(op.id)));
+    li.append(main);
+    if (sub) li.append(el('p', 'op-sub', sub));
+    if (op.status === 'running') {
+      const bar = el('div', 'opbar'), fill = el('span');
+      bar.append(fill);
+      li.append(bar);
+      S.runRows.push({ meta, fill });
+    }
+    if (op.kind === 'list' && op.status === 'done' && op.counts) li.append(listDetails(op));
+    return li;
+  }
+  function renderOps() {
+    const has = S.ops.length > 0;
+    show(ui.opsBox, has);
+    show(ui.saveBar, has);
+    renderEnc();
+    if (!has) return;
+    const running = !!S.run;
+    show(ui.stopBtn, running);
+    S.runRows = [];
+    const frag = document.createDocumentFragment();
+    for (const op of S.ops) frag.append(opRow(op));
+    ui.opList.replaceChildren(frag);
+    const n = S.ops.length;
+    ui.sbCount.textContent = `${fmtN(n)} ${n === 1 ? 'cambio' : 'cambios'}`;
+    if (running) { if (!ui.sbStatus.textContent.startsWith('Aplicando')) ui.sbStatus.textContent = 'Aplicando…'; }
+    else ui.sbStatus.textContent = busy() ? 'En cola…' : `Archivo nuevo: ${fmtSize(S.cur.blob.size)}`;
+  }
+
+  // ---------- Vista previa ----------
+  // Muestra la línea de la coincidencia: entera si cabe en N caracteres a cada lado; si no, recortada con «…».
+  function fillMark(target, ctx, pat, N) {
+    const clean = (s) => s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uFEFF]/g, ' ');
+    let before = ctx.before, after = ctx.after;
+    let lead = !ctx.fromStart, tail = !ctx.toEnd;
+    const nb = Math.max(before.lastIndexOf('\n'), before.lastIndexOf('\r'));
+    if (nb >= 0) { before = before.slice(nb + 1); lead = false; }
+    const na = after.search(/[\r\n]/);
+    if (na >= 0) { after = after.slice(0, na); tail = false; }
+    if (before.length > N) {
+      let k = before.length - N;
+      const c = before.charCodeAt(k);
+      if (c >= 0xDC00 && c <= 0xDFFF) k++;
+      before = before.slice(k);
+      lead = true;
+    }
+    if (after.length > N) {
+      let k = N;
+      const c = after.charCodeAt(k - 1);
+      if (c >= 0xD800 && c <= 0xDBFF) k--;
+      after = after.slice(0, k);
+      tail = true;
+    }
+    target.textContent = '';
+    target.append((lead ? '…' : '') + clean(before));
+    const ruby = el('ruby');
+    const rt = el('rt', pat.repl === '' ? 'gone' : '', pat.repl === '' ? 'se borra' : clip(pat.repl, 40));
+    ruby.append(el('span', 'strike', clean(ctx.match)), rt);
+    target.append(ruby, clean(after) + (tail ? '…' : ''));
+  }
+
+  // Si la línea no cabe en su caja, la desplaza para que la palabra que cambia quede en el centro.
+  function centerMark(box) {
+    if (!box || box.scrollHeight <= box.clientHeight + 1) return;
+    const mark = box.querySelector('ruby');
+    if (!mark) return;
+    const lh = parseFloat(getComputedStyle(box).lineHeight) || 0;
+    let top = mark.offsetTop - box.offsetTop - box.clientHeight / 2;
+    if (lh) top = Math.round(top / lh) * lh;
+    box.scrollTop = Math.max(0, top);
+  }
+
+  let debounce = 0;
+  const matchKey = (find, o) => [S.ver, S.enc, find, o.caseSensitive, o.wholeWord, omitKey(o.omit)].join('\u0001');
+  function updateApply() {
+    ui.applyBtn.disabled = !S.pat || (S.noMatch && !busy());
+    const n = S.skip.size;
+    note(ui.applyNote, n ? `${fmtN(n)} ${n === 1 ? 'coincidencia se quedará' : 'coincidencias se quedarán'} sin cambiar.` : '');
+  }
+  function refresh() {
+    const find = ui.find.value, repl = ui.repl.value;
+    const opts = { caseSensitive: ui.optCase.checked, wholeWord: ui.optWord.checked, omit: omitRule() };
+    let fMsg = /^\s|\s$/.test(find) ? 'Ojo: lleva espacios al principio o al final.' : '';
+    let rMsg = /^\s|\s$/.test(repl) ? 'Ojo: lleva espacios al principio o al final.' : '';
+    let fKind = '', rKind = '';
+    S.pat = null;
+    S.noMatch = false;
+    // Con «Omitir si hay» a medias no se busca: su nota ya dice qué falta.
+    if (S.file && S.ready && find && !omitPending()) {
+      const pat = E.compile(find, repl, opts, S.enc, S.freq);
+      if (pat.error === 'find') { fMsg = `${q(pat.bad)} no existe en la codificación de este archivo, así que no puede aparecer en él.`; fKind = 'err'; }
+      else if (pat.error === 'repl') { rMsg = `${q(pat.bad)} no se puede escribir en la codificación de este archivo. Quítalo o cambia la codificación.`; rKind = 'err'; }
+      else if (opts.caseSensitive && find === repl) { rMsg = 'Es el mismo texto que buscas.'; rKind = 'err'; }
+      else S.pat = pat;
+    }
+    note(ui.findNote, fMsg, fKind);
+    note(ui.replNote, rMsg, rKind);
+    const mk = S.pat ? matchKey(find, opts) : '';
+    if (mk !== S.skipKey) {
+      S.skip = new Set();
+      S.skipKey = mk;
+      closeMatches();
+    }
+    updateApply();
+    clearTimeout(debounce);
+    const tok = ++S.scanTok;
+    if (!S.pat) { S.shownKey = ''; show(ui.proof, false); ui.proofLine.textContent = ''; return; }
+    show(ui.proof, true);
+    if (busy()) {
+      S.shownKey = '';
+      ui.proofCap.textContent = 'La vista previa aparece cuando terminen los cambios en curso.';
+      ui.proofLine.textContent = '';
+      show(ui.proofLine, false);
+      show(ui.openMatches, false);
+      return;
+    }
+    const key = [S.ver, S.enc, find, repl, opts.caseSensitive, opts.wholeWord, omitKey(opts.omit)].join('\u0001');
+    if (key === S.shownKey) {
+      S.noMatch = S.shownNoMatch;
+      updateApply();
+      ui.proofCap.textContent = S.shownCap;
+      ui.proofLine.classList.remove('dim');
+      show(ui.proofLine, !S.shownNoMatch);
+      show(ui.openMatches, !S.shownNoMatch);
+      return;
+    }
+    ui.proofLine.classList.add('dim');
+    show(ui.openMatches, false);
+    if (!ui.proofLine.textContent) ui.proofCap.textContent = 'Buscando la primera coincidencia…';
+    const pat = S.pat, blob = S.cur.blob;
+    debounce = setTimeout(() => preview(tok, pat, blob, key), 200);
+  }
+
+  async function preview(tok, pat, blob, key) {
+    const alive = () => tok === S.scanTok && !busy();
+    const slow = setTimeout(() => { if (alive()) ui.proofCap.textContent = `Buscando ${q(clip(pat.find, 30))} en el archivo…`; }, 250);
+    try {
+      const counts = { inWord: 0, omitted: 0 };
+      const at = await E.findFirst({ pat, size: blob.size, read: reader(blob), chunkSize: CHUNK, isCancelled: () => !alive(), counts });
+      if (!alive()) return;
+      if (at < 0) {
+        S.noMatch = true;
+        updateApply();
+        const seen = counts.inWord + counts.omitted;
+        ui.proofCap.textContent = seen
+          ? `${q(clip(pat.find, 40))} aparece ${fmtN(seen)} ${seen === 1 ? 'vez' : 'veces'}, pero con las opciones elegidas no se cambia ninguna.`
+          : `${q(clip(pat.find, 40))} no aparece en este archivo.`;
+        ui.proofLine.textContent = '';
+        show(ui.proofLine, false);
+        remember(key, true);
+        return;
+      }
+      const ctx = await E.contextAround({ pat, size: blob.size, read: reader(blob), at, span: CTX_PREVIEW * 4 });
+      if (!alive()) return;
+      fillMark(ui.proofLine, ctx, pat, CTX_PREVIEW);
+      ui.proofCap.textContent = 'Así queda el primer cambio:';
+      ui.proofLine.classList.remove('dim');
+      show(ui.proofLine, true);
+      centerMark(ui.proofLine);
+      show(ui.openMatches, true);
+      remember(key, false);
+    } catch (err) {
+      if (!alive() || (err && err.name === 'AbortError')) return;
+      ui.proofCap.textContent = 'No se pudo leer el archivo para la vista previa.';
+      ui.proofLine.textContent = '';
+    } finally {
+      clearTimeout(slow);
+    }
+  }
+  function remember(key, noMatch) {
+    S.shownKey = key;
+    S.shownNoMatch = noMatch;
+    S.shownCap = ui.proofCap.textContent;
+  }
+
+  function applyRule() {
+    if (ui.applyBtn.disabled || !S.pat) return;
+    let skip = S.skip.size ? new Set(S.skip) : null;
+    if (skip && busy()) {
+      skip = null;
+      flash('Había otros cambios en curso, así que se cambiarán todas las coincidencias.');
+    }
+    const op = newOp({ kind: 'rule', find: ui.find.value, repl: ui.repl.value, cs: ui.optCase.checked, ww: ui.optWord.checked, om: S.pat.omit, skip, pat: S.pat });
+    ui.find.value = '';
+    ui.repl.value = '';
+    S.skip = new Set();
+    closeMatches();
+    addOps([op]);
+    refresh();
+    ui.find.focus();
+  }
+
+  // ---------- Coincidencias ----------
+  function closeMatches() {
+    S.mm = null;
+    show(ui.matchBox, false);
+    ui.matchList.textContent = '';
+  }
+  function openMatches() {
+    if (!S.pat || busy()) return;
+    S.mm = { pat: S.pat, blob: S.cur.blob, next: null, items: 0 };
+    ui.matchList.textContent = '';
+    show(ui.matchBox, true);
+    loadMatches(true);
+  }
+  function matchRow(it, ctx, pat) {
+    const li = el('li');
+    const label = el('label');
+    const box = el('input');
+    box.type = 'checkbox';
+    box.checked = !S.skip.has(it.occ);
+    if (!box.checked) li.classList.add('off');
+    box.addEventListener('change', () => {
+      if (box.checked) S.skip.delete(it.occ); else S.skip.add(it.occ);
+      li.classList.toggle('off', !box.checked);
+      updateApply();
+    });
+    const ctxEl = el('span', 'ctx');
+    fillMark(ctxEl, ctx, pat, CTX_MATCH);
+    label.append(box, el('span', 'ln', `Línea ${fmtN(it.line)}`), ctxEl);
+    li.append(label);
+    return li;
+  }
+  async function loadMatches(first) {
+    const mm = S.mm;
+    if (!mm) return;
+    ui.matchMore.disabled = true;
+    if (first) ui.matchHead.textContent = 'Buscando coincidencias…';
+    try {
+      const read = reader(mm.blob), size = mm.blob.size;
+      const r = await E.findMatches({ pat: mm.pat, size, read, from: mm.next, limit: 50, chunkSize: CHUNK, isCancelled: () => S.mm !== mm });
+      const ctxs = await Promise.all(r.items.map((it) => E.contextAround({ pat: mm.pat, size, read, at: it.offset, span: CTX_MATCH * 4 })));
+      if (S.mm !== mm) return;
+      const rows = r.items.map((it, i) => matchRow(it, ctxs[i], mm.pat));
+      const frag = document.createDocumentFragment();
+      frag.append(...rows);
+      ui.matchList.append(frag);
+      for (const row of rows) centerMark(row.querySelector('.ctx'));
+      mm.items += r.items.length;
+      mm.next = r.next;
+      const notOmitted = mm.pat.omit ? ', sin contar las omitidas' : '';
+      ui.matchHead.textContent = mm.items
+        ? `Desmarca las que no quieras cambiar. ${r.next ? `Primeras ${fmtN(mm.items)}` : `Son ${fmtN(mm.items)}`}${notOmitted}.`
+        : 'No hay coincidencias.';
+      show(ui.matchMore, !!r.next);
+      ui.matchMore.disabled = false;
+    } catch (err) {
+      if (S.mm === mm && !(err && err.name === 'AbortError')) ui.matchHead.textContent = 'No se pudo leer el archivo.';
+    }
+  }
+
+  // ---------- Lista de cambios ----------
+  function parseList(text) {
+    const pairs = [], errors = [];
+    text.split(/\r?\n/).forEach((raw, i) => {
+      if (!raw.trim() || raw.trimStart().startsWith('#')) return;
+      let f, r;
+      const tab = raw.indexOf('\t');
+      if (tab >= 0) { f = raw.slice(0, tab); r = raw.slice(tab + 1); }
+      else {
+        const m = /\s*(?:→|=>)\s*/.exec(raw);
+        if (!m) { errors.push(i + 1); return; }
+        f = raw.slice(0, m.index).trim();
+        r = raw.slice(m.index + m[0].length).trim();
+      }
+      if (!f) { errors.push(i + 1); return; }
+      pairs.push([f, r]);
+    });
+    return { pairs, errors };
+  }
+  function csvToTabs(text) {
+    const first = text.split(/\r?\n/, 1)[0] || '';
+    const count = (c) => first.split(c).length - 1;
+    const d = count('\t') ? '\t' : (count(';') > count(',') ? ';' : ',');
+    const rows = [];
+    let row = [], cell = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQ) {
+        if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else inQ = false; }
+        else cell += c;
+      } else if (c === '"' && cell === '') inQ = true;
+      else if (c === d) { row.push(cell); cell = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        row.push(cell); rows.push(row); row = []; cell = '';
+      } else cell += c;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter((r) => r.length >= 2 && r[0] !== '').map((r) => r[0] + '\t' + r[1]).join('\n');
+  }
+  let listT = 0;
+  function parseListNow() {
+    const text = ui.listText.value;
+    const { pairs, errors } = parseList(text);
+    S.listPairs = pairs;
+    if (!text.trim()) note(ui.listNote, '');
+    else if (errors.length) {
+      const which = errors.slice(0, 5).map(fmtN).join(', ') + (errors.length > 5 ? '…' : '');
+      note(ui.listNote, `Revisa ${errors.length === 1 ? 'la línea' : 'las líneas'} ${which}: falta lo que buscas o el separador (tabulación o →).`, 'err');
+    } else note(ui.listNote, `${fmtN(pairs.length)} ${pairs.length === 1 ? 'cambio listo' : 'cambios listos'} para aplicar.`);
+    ui.listApply.disabled = !pairs.length || errors.length > 0 || !S.ready || omitPending();
+  }
+  function applyList() {
+    const pairs = S.listPairs;
+    if (!pairs || !pairs.length || !S.ready || omitPending()) return;
+    const cs = ui.optCase.checked, ww = ui.optWord.checked, om = omitRule();
+    const lp = E.compileList(pairs, { caseSensitive: cs, wholeWord: ww, omit: om }, S.enc);
+    if (lp.error) {
+      const where = lp.index !== undefined ? `En la línea con ${q(clip(pairs[lp.index][0], 30))}: ` : '';
+      const msg = lp.error === 'find' ? `${where}${q(lp.bad)} no existe en la codificación de este archivo.`
+        : lp.error === 'repl' ? `${where}${q(lp.bad)} no se puede escribir en la codificación de este archivo.`
+        : lp.error === 'big' ? 'La lista es demasiado grande para aplicarla de una vez. Divídela en partes.'
+        : 'La lista no tiene cambios válidos.';
+      note(ui.listNote, msg, 'err');
+      return;
+    }
+    addOps([newOp({ kind: 'list', pairs, cs, ww, om, lp })]);
+    const extra = [];
+    if (lp.dups.length) extra.push(`${fmtN(lp.dups.length)} ${lp.dups.length === 1 ? 'línea repetida se ignoró' : 'líneas repetidas se ignoraron'}.`);
+    if (lp.downgraded) extra.push('Algunas letras de la lista no permiten ignorar mayúsculas, así que se distinguen.');
+    ui.listText.value = '';
+    S.listPairs = null;
+    note(ui.listNote, '');
+    ui.listApply.disabled = true;
+    show(ui.listBox, false);
+    if (extra.length) flash(extra.join(' '));
+  }
+
+  // ---------- Ir a una línea ----------
+  function curIndex() {
+    const cur = S.cur;
+    if (!cur.idx) {
+      if (cur.blob === S.file && S.origIdx) cur.idx = S.origIdx;
+      else {
+        cur.idx = new E.LineIndex(reader(cur.blob), cur.blob.size, S.enc, bomNow());
+        if (cur.blob === S.file) S.origIdx = cur.idx;
+      }
+    }
+    return cur.idx;
+  }
+  function openViewer() {
+    if (!S.ready) return;
+    S.viewer.open = true;
+    show(ui.viewer, true);
+    ui.lineInput.focus();
+    if (!ui.lineList.childElementCount) goToLine(1);
+  }
+  function closeViewer() {
+    S.viewer.open = false;
+    S.viewer.editing = 0;
+    S.viewer.tok++;
+    show(ui.viewer, false);
+    ui.lineList.textContent = '';
+    ui.lineTotal.textContent = '';
+    note(ui.viewerNote, '');
+  }
+  function goToLine(n) {
+    S.viewer.target = n;
+    S.viewer.top = Math.max(1, n - Math.floor(PAGE / 2));
+    S.viewer.editing = 0;
+    renderViewer();
+  }
+  async function renderViewer() {
+    if (!S.viewer.open || !S.cur || !S.ready) return;
+    const tok = ++S.viewer.tok, ver = S.ver, idx = curIndex();
+    let slow = setTimeout(() => { if (tok === S.viewer.tok) note(ui.viewerNote, 'Buscando la línea…'); }, 200);
+    let rows;
+    try {
+      rows = await idx.readLines(S.viewer.top, PAGE, 3000, (e, size) => {
+        if (tok === S.viewer.tok) note(ui.viewerNote, `Buscando la línea… ${Math.floor((e / size) * 100)} %`);
+      });
+    } catch (_) {
+      clearTimeout(slow);
+      if (tok === S.viewer.tok) note(ui.viewerNote, 'No se pudo leer el archivo.', 'err');
+      return;
+    }
+    clearTimeout(slow);
+    if (tok !== S.viewer.tok) return;
+    if (!rows.length && idx.done) {
+      const total = idx.total;
+      S.viewer.top = Math.max(1, total - PAGE + 1);
+      S.viewer.target = Math.min(S.viewer.target, total);
+      note(ui.viewerNote, `El archivo tiene ${fmtN(total)} ${total === 1 ? 'línea' : 'líneas'}.`);
+      rows = await idx.readLines(S.viewer.top, PAGE, 3000);
+      if (tok !== S.viewer.tok) return;
+    } else note(ui.viewerNote, '');
+    const frag = document.createDocumentFragment();
+    for (const r of rows) { r.ver = ver; frag.append(lineRow(r)); }
+    ui.lineList.replaceChildren(frag);
+    ui.lineTotal.textContent = idx.done ? `de ${fmtN(idx.total)}` : '';
+    ui.linePrev.disabled = S.viewer.top <= 1;
+    ui.lineNext.disabled = !rows.length || rows[rows.length - 1].last;
+    const ed = ui.lineList.querySelector('.edit-row input');
+    if (ed) ed.focus();
+  }
+  function lineRow(r) {
+    const li = el('li');
+    if (r.n === S.viewer.target) li.classList.add('here');
+    li.append(el('span', 'ln', fmtN(r.n)));
+    if (S.viewer.editing === r.n) {
+      const wrap = el('div', 'edit-row');
+      const inp = el('input');
+      inp.type = 'text';
+      inp.value = S.viewer.editText;
+      inp.spellcheck = false;
+      inp.setAttribute('aria-label', `Nuevo texto de la línea ${fmtN(r.n)}`);
+      const ok = button('btn primary small', 'Aplicar cambio', () => applyLineEdit(r, inp.value));
+      const cancel = button('linklike', 'Cancelar', () => { S.viewer.editing = 0; renderViewer(); });
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); applyLineEdit(r, inp.value); }
+        else if (e.key === 'Escape') { e.preventDefault(); S.viewer.editing = 0; renderViewer(); }
+      });
+      wrap.append(inp, ok, cancel);
+      li.append(wrap);
+      return li;
+    }
+    const txt = el('span', r.len ? 'lt' : 'lt empty', r.len ? r.text + (r.cut ? '…' : '') : 'línea vacía');
+    const edit = button('linklike', 'Editar', () => startEdit(r));
+    if (r.len > EDIT_MAX) { edit.disabled = true; edit.title = `Línea demasiado larga para editarla a mano (${fmtSize(r.len)})`; }
+    li.append(txt, edit);
+    return li;
+  }
+  async function startEdit(r) {
+    if (busy()) { note(ui.viewerNote, 'Espera a que terminen los cambios en curso para editar líneas.', 'err'); return; }
+    let text = r.text;
+    if (r.cut) text = new TextDecoder(S.enc).decode(await reader(S.cur.blob)(r.start, r.end));
+    S.viewer.editing = r.n;
+    S.viewer.editText = text;
+    S.viewer.target = r.n;
+    renderViewer();
+  }
+  function applyLineEdit(r, text) {
+    if (busy() || r.ver !== S.ver) {
+      note(ui.viewerNote, 'El archivo cambió mientras editabas. Vuelve a abrir la línea.', 'err');
+      S.viewer.editing = 0;
+      if (!busy()) renderViewer();
+      return;
+    }
+    text = text.replace(/[\r\n]+/g, ' ');
+    const enc = E.encodeString(text, S.enc);
+    if (enc.bad !== null) { note(ui.viewerNote, `${q(enc.bad)} no se puede escribir en la codificación de este archivo.`, 'err'); return; }
+    const cur = S.cur, idx = curIndex();
+    const blob = new Blob([cur.blob.slice(0, r.start), enc.bytes, cur.blob.slice(r.end)], { type: 'text/plain' });
+    const delta = enc.bytes.length - (r.end - r.start);
+    const op = newOp({ kind: 'line', line: r.n, text, bytes: enc.bytes, status: 'done', applied: true });
+    if (S.pendingSession) { S.pendingSession = null; show(ui.resume, false); }
+    S.ops.push(op);
+    S.prev = cur;
+    S.cur = { blob, n: S.ops.length, idx: idx.shifted(reader(blob), blob.size, r.start, r.end, delta) };
+    S.ver++;
+    S.viewer.editing = 0;
+    flash('');
+    persist();
+    renderOps();
+    refresh();
+    renderViewer();
+  }
+
+  // ---------- Guardar ----------
+  async function saveBlob(blob, name) {
+    note(ui.saveNote, '');
+    const cap = await downloadsReady;
+    if (cap) {
+      try {
+        await cap.save({ filename: name, data: blob });
+        note(ui.saveNote, 'Archivo guardado.');
+      } catch (err) {
+        const c = err && err.code;
+        if (c === 'declined') note(ui.saveNote, '');
+        else if (c === 'rate_limited') note(ui.saveNote, 'Ya hay una ventana para guardar abierta.');
+        else if (c === 'too_large') note(ui.saveNote, 'Es demasiado grande para guardarlo desde la app del teléfono. Hazlo desde una computadora.', 'err');
+        else note(ui.saveNote, 'No se pudo guardar el archivo. Prueba otra vez.', 'err');
+      }
+      return;
+    }
+    if (!framed) {
+      if (typeof window.showSaveFilePicker === 'function') {
+        try {
+          const h = await window.showSaveFilePicker({ suggestedName: name });
+          const w = await h.createWritable();
+          await w.write(blob);
+          await w.close();
+          note(ui.saveNote, 'Archivo guardado.');
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = el('a');
+      a.href = url;
+      a.download = name;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 120000);
+      note(ui.saveNote, 'Descarga iniciada.');
+      return;
+    }
+    note(ui.saveNote, 'Desde aquí no se puede guardar el archivo.', 'err');
+  }
+  async function save() {
+    if (!S.cur || !S.ops.length) return;
+    if (busy()) { S.saveWanted = true; note(ui.saveNote, 'Se guardará cuando terminen los cambios en curso.'); return; }
+    ui.saveBtn.disabled = true;
+    try { await saveBlob(S.cur.blob, outputName(S.name)); } finally { ui.saveBtn.disabled = false; }
+  }
+  function exportList() {
+    const lines = [];
+    for (const op of S.ops) {
+      if (op.kind === 'rule') lines.push(op.find + '\t' + op.repl);
+      else if (op.kind === 'list') for (const [f, r] of op.pairs) lines.push(f + '\t' + r);
+    }
+    if (!lines.length) { note(ui.saveNote, 'No hay cambios de texto que descargar.'); return; }
+    saveBlob(new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/plain' }), 'lista-de-cambios.txt');
+  }
+
+  // ---------- Eventos ----------
+  const pick = () => { ui.fileInput.click(); };
+  ui.drop.addEventListener('click', pick);
+  ui.chooseBtn.addEventListener('click', (e) => { e.stopPropagation(); pick(); });
+  ui.changeBtn.addEventListener('click', pick);
+  ui.fileInput.addEventListener('change', () => {
+    const f = ui.fileInput.files && ui.fileInput.files[0];
+    ui.fileInput.value = '';
+    if (f) setFile(f);
+  });
+  let dragDepth = 0;
+  const hasFiles = (e) => !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  function setDrag(on) {
+    (ui.fileBox.hidden ? ui.drop : ui.fileBox).classList.toggle('over', on);
+    if (ui.fileBox.hidden) ui.dropTitle.textContent = on ? 'Suéltalo para abrirlo' : 'Arrastra aquí tu archivo .txt';
+  }
+  document.addEventListener('dragenter', (e) => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; setDrag(true); });
+  document.addEventListener('dragover', (e) => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+  document.addEventListener('dragleave', (e) => { if (!hasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) setDrag(false); });
+  document.addEventListener('drop', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    setDrag(false);
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+
+  ui.encSel.addEventListener('change', () => {
+    if (S.ops.length) { renderEnc(); return; }
+    S.enc = ui.encSel.value;
+    S.origIdx = null;
+    if (S.cur) S.cur.idx = null;
+    S.ver++;
+    refresh();
+    if (S.viewer.open) renderViewer();
+  });
+  ui.resumeYes.addEventListener('click', resumeSession);
+  ui.resumeNo.addEventListener('click', discardSession);
+
+  ui.find.addEventListener('input', refresh);
+  ui.repl.addEventListener('input', refresh);
+  ui.optCase.addEventListener('change', refresh);
+  ui.optWord.addEventListener('change', refresh);
+  for (const c of omitChips) c.el.addEventListener('click', () => toggleOmit(c));
+  paintOmit();
+  for (const x of [ui.find, ui.repl]) {
+    x.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); applyRule(); } });
+  }
+  ui.applyBtn.addEventListener('click', applyRule);
+  ui.openMatches.addEventListener('click', openMatches);
+  ui.matchClose.addEventListener('click', closeMatches);
+  ui.matchMore.addEventListener('click', () => loadMatches(false));
+
+  ui.openList.addEventListener('click', () => { show(ui.listBox, true); parseListNow(); ui.listText.focus(); });
+  ui.listClose.addEventListener('click', () => show(ui.listBox, false));
+  ui.listText.addEventListener('input', () => { clearTimeout(listT); listT = setTimeout(parseListNow, 200); });
+  ui.listApply.addEventListener('click', applyList);
+  ui.listUploadBtn.addEventListener('click', () => ui.listFile.click());
+  ui.listFile.addEventListener('change', async () => {
+    const f = ui.listFile.files && ui.listFile.files[0];
+    ui.listFile.value = '';
+    if (!f) return;
+    if (f.size > 20 << 20) { note(ui.listNote, 'Ese archivo es demasiado grande para ser una lista.', 'err'); return; }
+    let text = decodeText(new Uint8Array(await f.arrayBuffer()));
+    if (/\.csv$/i.test(f.name)) text = csvToTabs(text);
+    ui.listText.value = text;
+    parseListNow();
+  });
+
+  ui.openViewer.addEventListener('click', openViewer);
+  ui.viewerClose.addEventListener('click', closeViewer);
+  const goFromInput = () => {
+    const n = parseInt(ui.lineInput.value.replace(/\D/g, ''), 10);
+    if (!(n >= 1)) { note(ui.viewerNote, 'Escribe un número de línea.', 'err'); return; }
+    goToLine(n);
+  };
+  ui.lineGo.addEventListener('click', goFromInput);
+  ui.lineInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); goFromInput(); } });
+  ui.linePrev.addEventListener('click', () => { S.viewer.top = Math.max(1, S.viewer.top - PAGE); S.viewer.editing = 0; renderViewer(); });
+  ui.lineNext.addEventListener('click', () => { S.viewer.top += PAGE; S.viewer.editing = 0; renderViewer(); });
+
+  ui.stopBtn.addEventListener('click', stopRun);
+  ui.saveBtn.addEventListener('click', save);
+  ui.exportBtn.addEventListener('click', exportList);
+
+  // ---------- Tema claro u oscuro ----------
+  const THEME_KEY = 'reemplazar-txt-tema';
+  const mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function themeNow() {
+    const a = document.documentElement.getAttribute('data-theme');
+    if (a === 'light' || a === 'dark') return a;
+    return mq && mq.matches ? 'dark' : 'light';
+  }
+  function paintTheme() {
+    const t = themeNow();
+    ui.themeLight.setAttribute('aria-pressed', String(t === 'light'));
+    ui.themeDark.setAttribute('aria-pressed', String(t === 'dark'));
+  }
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem(THEME_KEY, t); } catch (_) {}
+    paintTheme();
+  }
+  ui.themeLight.addEventListener('click', () => setTheme('light'));
+  ui.themeDark.addEventListener('click', () => setTheme('dark'));
+  if (mq && mq.addEventListener) mq.addEventListener('change', paintTheme);
+  new MutationObserver(paintTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  paintTheme();
+})();
+</script>
+</body>
+</html>
